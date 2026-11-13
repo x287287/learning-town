@@ -435,7 +435,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--brass);outline-
   <div class="form" id="cForm">
     <div><label class="l" for="nameInput">冒險者名字</label><input id="nameInput" maxlength="10" placeholder="例如：小明" autocomplete="off"></div>
     <div id="lvRow"><span style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">學習階段</span><div class="choices" id="cLv"></div><p class="small" id="cLvNote" style="margin:6px 0 0"></p></div>
-    <div><span class="l" style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">職業造型</span><div class="choices" id="cClass"></div></div>
+    <div><span class="l" style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">職業造型</span><div class="choices" id="cClass"></div><p class="small" id="cClsNote" style="margin:6px 0 0"></p></div>
     <div id="hatRow"><span class="l" style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">頭飾</span><div class="choices" id="cHat"></div></div>
     <div><span style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">披風顏色</span><div class="choices" id="cCape"></div></div>
     <div><span style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">主手</span><div class="choices" id="cMain"></div></div>
@@ -490,6 +490,16 @@ const CLASSES={
   Rogue:{label:'遊俠',hat:null,cape:'Rogue_Cape',main:['Knife','1H_Crossbow','2H_Crossbow'],off:['Knife_Offhand','Throwable']},
   Rogue_Hooded:{label:'兜帽遊俠',hat:null,cape:'Rogue_Cape',main:['Knife','1H_Crossbow','2H_Crossbow'],off:['Knife_Offhand','Throwable']},
 };
+/* 第 30 版：職業特性與轉職 */
+const CLS_TRAIT={
+  Knight:{name:'守護之盾',glyph:'盾',color:'#2f5ea8',desc:'每場戰鬥第一次答錯時，盾牌會擋下攻擊，不會失去愛心。'},
+  Barbarian:{name:'狂戰之力',glyph:'斧',color:'#b33a2c',desc:'連擊 3 題以上時，答對有一半機會打出重擊，造成兩倍傷害。'},
+  Mage:{name:'智慧之光',glyph:'光',color:'#7a4fb0',desc:'每場戰鬥第一道選擇題，會自動刪去一個錯誤選項；有時間限制的題目多 10 秒。'},
+  Rogue:{name:'尋寶眼光',glyph:'寶',color:'#b8862a',desc:'打贏戰鬥時，多拿 20% 金幣（至少多 2 枚）。'},
+  Rogue_Hooded:{name:'靈巧閃避',glyph:'影',color:'#3d8a4a',desc:'答錯時有 3 成機會閃開攻擊，不會失去愛心。'},
+};
+const JOB_PRICE=150;
+function clsIs(k){ return !!(save&&save.look&&save.look.cls===k); }
 const GEAR_ALL=[...new Set(Object.values(CLASSES).flatMap(c=>[...c.main,...c.off]))];
 const GEAR_LABEL={'1H_Sword':'單手劍','2H_Sword':'雙手大劍','Round_Shield':'圓盾','Badge_Shield':'徽章盾','Rectangle_Shield':'方盾','Spike_Shield':'尖刺盾','1H_Sword_Offhand':'副手劍',
   '1H_Axe':'單手斧','2H_Axe':'雙手巨斧','Barbarian_Round_Shield':'木圓盾','1H_Axe_Offhand':'副手斧','Mug':'木杯','1H_Wand':'魔杖','2H_Staff':'法杖','Spellbook':'魔法書','Spellbook_open':'翻開的魔法書',
@@ -556,6 +566,7 @@ const ACH=[
   {id:'star15',name:'完美勇者',desc:'任一個單元的 5 關都拿到 3 顆星',title:'完美勇者'},
   {id:'friend',name:'動物好朋友',desc:'摸摸城裡全部 8 隻動物',title:'動物好朋友'},
   {id:'weekstar',name:'主題週之星',desc:'完成一次主題週目標',title:'主題週之星'},
+  {id:'job',name:'新的旅程',desc:'找職業導師轉職一次',title:'轉職冒險者'},
 ];
 const PLACES=['guild','market','smith','tailor','library','portal','castle','training','well','gate'];
 
@@ -874,7 +885,7 @@ const NPC_DEFS=[
     lines:['鏘！鏘！……喔，小冒險者，要讓裝備閃閃發光嗎？','附魔和光環很貴，但很帥。先努力完成任務存金幣吧！'],
     opts:[['看看附魔與特效',()=>openShop('smith')]]},
   {id:'tailor',name:'莉莉',role:'裁縫師',face:'莉',color:'#7a4fb0',look:{cls:'Rogue_Hooded',hat:false,cape:'purple',main:'none',off:'none'},x:-18.5,z:27.5,place:'tailor',anim:'idle',
-    lines:['想換個新造型嗎？職業、頭飾、披風、武器，通通可以重新搭配。','買到染料或特效之後，記得來找我換上！'],
+    lines:['想換個新造型嗎？頭飾、披風、武器，通通可以重新搭配。','想換職業的話，要去榮譽殿堂找職業導師葛雷喔。','買到染料或特效之後，記得來找我換上！'],
     opts:[['更換造型',()=>openCreator(true)]]},
   {id:'library',name:'索菲亞',role:'大圖書館館長',face:'索',color:'#2f5ea8',look:{cls:'Mage',hat:false,cape:'blue',main:'none',off:'Spellbook_open'},x:-21,z:-19,place:'library',anim:'idle',
     lines:['噓——這裡是大圖書館。影片室裡有各單元的重點複習影片。','出發冒險前先來複習，答題會更有把握。'],
@@ -885,6 +896,9 @@ const NPC_DEFS=[
   {id:'castle',name:'亞瑟',role:'騎士隊長',face:'亞',color:'#2f5ea8',look:{cls:'Knight',hat:true,cape:'blue',main:'2H_Sword',off:'none'},x:0,z:-43,place:'castle',anim:'idle',
     lines:['這裡是榮譽殿堂。每一位冒險者的成就，國王都看在眼裡。','達成成就可以獲得稱號，選一個最喜歡的掛在名字上吧！'],
     opts:[['查看成就與稱號',()=>openAch()],['我的學習報告',()=>openReport()],['怪物圖鑑',()=>openDex()]]},
+  {id:'job',name:'葛雷',role:'職業導師',face:'職',color:'#8a6a2a',look:{cls:'Knight',hat:false,cape:'gold',main:'1H_Sword',off:'Badge_Shield'},x:-7,z:-47,ry:0.35,place:'castle',anim:'idle',
+    lines:['我是職業導師葛雷。每一種職業都有自己的特長，在戰鬥中會幫上不同的忙。',`想換一種職業冒險嗎？轉職要 ${JOB_PRICE} 金幣，換了之後也可以再換回來。`],
+    opts:[['我想轉職',()=>openJob()],['各職業有什麼特性？',()=>say('job','騎士的盾會擋下第一次攻擊；戰士連擊時會打出重擊；魔法師會刪去錯的選項，還多一點時間；遊俠打贏能多拿金幣；兜帽遊俠有機會閃開攻擊。')]]},
   {id:'training',name:'布魯斯',role:'訓練教官',face:'布',color:'#3d8a4a',look:{cls:'Barbarian',hat:true,cape:'green',main:'2H_Axe',off:'none'},x:46,z:-26,place:'training',anim:'idle',
     lines:['想變強就要多練習！這裡是訓練場。','選一個單元、決定要練幾題，想練幾次都可以。答錯了就看解說，再來一次！'],
     opts:[['開始練習',()=>openPractice()]]},
@@ -1114,7 +1128,7 @@ function openInfo(){
   openPanel(panelShell('冒險指南','',`
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#b33a2c">委</div><div><h3>冒險者公會（東北）</h3><p>找公會長雷恩接取各科委託。</p></div></div>
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#b8862a">市</div><div><h3>市集（東）與鐵匠鋪（東南）</h3><p>用金幣買道具、披風染料、附魔特效。</p></div></div>
-    <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#7a4fb0">裁</div><div><h3>裁縫屋（西南）</h3><p>隨時更換職業造型、頭飾、披風、武器和特效。</p></div></div>
+    <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#7a4fb0">裁</div><div><h3>裁縫屋（西南）</h3><p>隨時更換頭飾、披風、武器和特效。想換職業，要到榮譽殿堂找職業導師葛雷（${JOB_PRICE} 金幣）。</p></div></div>
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#3a2a5a">門</div><div><h3>傳送門廣場（西）</h3><p>五座傳送門通往${SUB.chinese.name}「文字森林」、數學「數字遺跡」、英語「海港王國」、自然「奇幻山谷」、社會「時光古城」，全部已開放。每個世界有不同的地形和守衛怪物，答對攻擊、答錯被反擊，對戰時可按 1～4 選答案。題型除了選擇題，還有判斷對錯、輸入答案、配對和排順序（訓練場和每日挑戰也會出現判斷對錯、輸入答案）。連續答對有連擊獎勵；不失去愛心能拿到 3 顆星；魔王血量剩一半會狂暴！</p></div></div>
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#2f5ea8">書</div><div><h3>大圖書館（西北）．榮譽殿堂（北）．訓練場（遠東北）</h3><p>看各單元的重點複習影片、查看成就稱號；訓練場可以選單元和題數反覆練習。</p></div></div>
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#d9863a">寵</div><div><h3>魔法寵物屋（西南）</h3><p>找露露領養奇幻寵物。帶在身邊的寵物會跟著你，還會在戰鬥中發揮魔法能力。</p></div></div>
@@ -1124,6 +1138,7 @@ function openInfo(){
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#2f5ea8">鑑</div><div><h3>怪物圖鑑與學習報告</h3><p>右上角「圖鑑」收集五科 25 種怪物；榮譽殿堂可以看各科答對率和最需要加強的地方。</p></div></div>
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#5b5f66">井</div><div><h3>中央廣場</h3><p>許願井每天可以許願一次；公告欄有老師的公告。</p></div></div>
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#b8862a">週</div><div><h3>主題週</h3><p>${weekBanner()}每週一換一科，依照數學、${SUB.chinese.name}、英語、自然、社會輪流。</p></div></div>
+    <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:${CLS_TRAIT[save.look.cls].color}">${CLS_TRAIT[save.look.cls].glyph}</div><div><h3>我的職業：${CLASSES[save.look.cls].label}（${CLS_TRAIT[save.look.cls].name}）</h3><p>${CLS_TRAIT[save.look.cls].desc}想換職業，到榮譽殿堂找職業導師葛雷。</p></div></div>
     ${cloudInfoCard()}
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#3d8a4a">存</div><div><h3>備份檔（額外保險）</h3><p>有雲端帳號就會自動存檔；也可以另外下載備份檔。${save.lastBackup?`上次備份：${fmtDate(save.lastBackup)}`:'你還沒有備份過。'}</p><button type="button" class="act" data-infobk="1" style="margin-top:6px">備份／還原我的進度</button></div></div>
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#5b5f66">休</div><div><h3>休息提醒（老師或家長設定）</h3><p>連續冒險一段時間後，會請你休息 20 秒、看看遠方。這台裝置目前：<b>${restMin?restMin+' 分鐘':'關閉'}</b></p><div class="choices" style="margin-top:6px">${[0,20,30,45,60].map(m=>`<button type="button" class="ch" data-rest="${m}" aria-pressed="${restMin===m}">${m?m+' 分鐘':'關閉'}</button>`).join('')}</div></div></div>
@@ -1180,7 +1195,8 @@ function owned(id){return !id||!!save.inv[id];}
 function renderCreator(){
   const L=draft, C=CLASSES[L.cls];
   const btn=(sel,val,label,attr='')=>`<button type="button" class="ch" aria-pressed="${sel===val}" ${attr}>${label}</button>`;
-  $('cClass').innerHTML=Object.entries(CLASSES).map(([k,c])=>`<button type="button" class="ch" data-cls="${k}" aria-pressed="${L.cls===k}">${c.label}</button>`).join('');
+  $('cClass').innerHTML=Object.entries(CLASSES).map(([k,c])=>`<button type="button" class="ch ${editing&&L.cls!==k?'lock':''}" data-cls="${k}" aria-pressed="${L.cls===k}">${c.label}</button>`).join('');
+  const T=CLS_TRAIT[L.cls]; $('cClsNote').innerHTML=`<b>職業特性．${T.name}</b>：${T.desc}${editing?'<br>想換職業，要到榮譽殿堂找職業導師葛雷。':'<br>之後想換職業，可以到榮譽殿堂找職業導師（要花金幣）。'}`;
   $('hatRow').hidden=!C.hat;
   $('cHat').innerHTML=C.hat?[[true,'戴上'+C.hatLabel],[false,'不戴']].map(([v,t])=>`<button type="button" class="ch" data-hat="${v}" aria-pressed="${L.hat===v}">${t}</button>`).join(''):'';
   $('cCape').innerHTML=CAPES.map(c=>{const ok=owned(c.shop);return c.color?`<button type="button" class="sw ${ok?'':'lock'}" data-cape="${c.id}" aria-pressed="${L.cape===c.id}" aria-label="${c.label}色披風${ok?'':'（未解鎖）'}" title="${c.label}${ok?'':'：'+lockHint(c.shop)}" style="background:${c.color}"></button>`
@@ -1193,6 +1209,7 @@ function renderCreator(){
 $('cForm').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return; const d=b.dataset;
   if(d.lv){ draftLv=d.lv==='jh'?'jh':'es'; renderLv(); return; }
+  if(d.cls&&editing&&d.cls!==draft.cls){ toast(`想換職業，請到榮譽殿堂找職業導師葛雷（${JOB_PRICE} 金幣）`); return; }
   if(d.cls){draft.cls=d.cls;const C=CLASSES[d.cls];draft.main=C.main[0];draft.off=C.off[0]||'none';draft.hat=true;}
   else if(d.hat!==undefined) draft.hat=d.hat==='true';
   else if(d.cape){const c=CAPES.find(x=>x.id===d.cape); if(!owned(c.shop)){toast(lockHint(c.shop));return;} draft.cape=d.cape;}
@@ -2001,7 +2018,7 @@ function answerHtml(ok,timeout){
 /* ---------- 金幣收支紀錄（給老師觀察經濟平衡） ---------- */
 function addCoins(n,src){ n=Math.round(n)||0; save.coins+=n; const L=save.coinLog=save.coinLog||{}; L[src]=(L[src]||0)+n; }
 function spendCoins(n,src){ save.coins-=n; const L=save.coinLog=save.coinLog||{}; L['-'+src]=(L['-'+src]||0)+n; }
-const COIN_SRC={battle:'闖關',chest:'寶箱',quest:'委託',video:'看影片',daily:'每日挑戰',wish:'許願井',week:'主題週','-shop':'商店','-pet':'領養寵物','-wander':'流浪商人'};
+const COIN_SRC={battle:'闖關',chest:'寶箱',quest:'委託',video:'看影片',daily:'每日挑戰',wish:'許願井',week:'主題週','-shop':'商店','-pet':'領養寵物','-wander':'流浪商人','-job':'轉職'};
 function coinLogHtml(){
   const L=save.coinLog||{}; const inc=Object.entries(L).filter(([k])=>!k.startsWith('-')), out=Object.entries(L).filter(([k])=>k.startsWith('-'));
   if(!inc.length&&!out.length) return '';
@@ -2346,7 +2363,7 @@ function startBattle(n,confirmed){
   const mc=m.ch; for(const a of Object.values(mc.actions)) a.stop(); mc.cur=null; mc.busy=true;
   holdPose(mc,replay&&mc.actions.skRevive?'skRevive':'skAwaken'); if(replay) toast(`${s.name}復活了！`);
   setTimeout(()=>{if(battle&&battle.m===m){mc.busy=false;mc.cur=null;playOn(mc,'idle');}},replay?2400:1600);
-  $('bStage').textContent=`第 ${n} 關．${s.topic}`; $('bMName').textContent=s.name; $('bPName').textContent=save.name||'冒險者';
+  $('bStage').textContent=`第 ${n} 關．${s.topic}`; $('bMName').textContent=s.name; $('bPName').textContent=(save.name||'冒險者')+'．'+(CLASSES[save.look.cls]||CLASSES.Knight).label;
   $('battle').hidden=false; for(const id of ['hudBtns','minimap','where','help']) $(id).hidden=true;
   renderBars(); showCombo(); nextQuestion(); bgmUpdate();
 }
@@ -2365,10 +2382,11 @@ function nextQuestion(){
   $('bFb').hidden=true; $('bFb').innerHTML='';
   renderQ();
   const tm=battleTimer(b);
-  if(tm){b.tMax=tm+(petPerk('demon')?15:0)+(b.cur.type==='match'||b.cur.type==='ord'?20:0);b.tLeft=b.tMax;$('bTimer').hidden=false;clearInterval(b.timerId);
+  if(tm){b.tMax=tm+(petPerk('demon')?15:0)+(clsIs('Mage')?10:0)+(b.cur.type==='match'||b.cur.type==='ord'?20:0);b.tLeft=b.tMax;$('bTimer').hidden=false;clearInterval(b.timerId);
     b.timerId=setInterval(()=>{const before=Math.ceil(b.tLeft);b.tLeft-=.1;drawTimer();if(b.tLeft<=5&&Math.ceil(b.tLeft)<before&&b.tLeft>0)sfx('tick');if(b.tLeft<=0){clearInterval(b.timerId);answer(-1);}},100);drawTimer();}
   else $('bTimer').hidden=true;
-  if(b.cur.type==='mc'&&petPerk('hywirl')&&!b.foxDone){ b.foxDone=true; const wrong=[...$('bOpts').querySelectorAll('.bopt')].filter(x=>+x.dataset.i!==0); const pick=wrong[Math.random()*wrong.length|0]; if(pick){pick.disabled=true;pick.classList.add('struck'); toast(`${save.pets.owned.hywirl.name}幫你刪去了一個錯誤選項`);} }
+  if(b.cur.type==='mc'&&clsIs('Mage')&&!b.mageDone){ b.mageDone=true; const wrong=[...$('bOpts').querySelectorAll('.bopt:not([disabled])')].filter(x=>+x.dataset.i!==0); const pick=wrong[Math.random()*wrong.length|0]; if(pick){pick.disabled=true;pick.classList.add('struck'); toast('魔法師的智慧之光：刪去了一個錯誤選項');} }
+  if(b.cur.type==='mc'&&petPerk('hywirl')&&!b.foxDone){ b.foxDone=true; const wrong=[...$('bOpts').querySelectorAll('.bopt:not([disabled])')].filter(x=>+x.dataset.i!==0); const pick=wrong[Math.random()*wrong.length|0]; if(pick){pick.disabled=true;pick.classList.add('struck'); toast(`${save.pets.owned.hywirl.name}幫你刪去了一個錯誤選項`);} }
   renderBars();
 }
 function battleTimer(b){ if(!b.s.timer) return 0; if(!b.rage) return b.s.timer; const c=b.cur; const len=c&&c.q?c.q.q.length+c.q.o.join('').length/3:30; return Math.round(Math.max(40,Math.min(60,40+(len-30)*.6))); }
@@ -2398,12 +2416,16 @@ function resolve(ok,timeout,recorded){
   let perkMsg='';
   if(ok){ comboRun++; b.maxCombo=Math.max(b.maxCombo||0,comboRun); if(comboRun>=3) b.bonus=(b.bonus||0)+2;
     if(comboRun>(save.bestCombo||0)){ save.bestCombo=comboRun; }
-    const dbl=petPerk('dino')&&Math.random()<.3; b.hp=Math.max(0,b.hp-(dbl?2:1)); if(dbl) perkMsg=`${save.pets.owned.dino.name}的龍息：兩倍傷害！`;
+    const dbl=petPerk('dino')&&Math.random()<.3; const crit=!dbl&&clsIs('Barbarian')&&comboRun>=3&&Math.random()<.5;
+    b.hp=Math.max(0,b.hp-(dbl||crit?2:1)); if(dbl) perkMsg=`${save.pets.owned.dino.name}的龍息：兩倍傷害！`; if(crit) perkMsg='戰士的狂戰之力：重擊！兩倍傷害！';
     oneShot(pc,attackClip(),'idle',1000); sfx('ok',comboRun); if(comboRun>=3) sfx('combo',comboRun); setTimeout(()=>{sfx('hit'); if(b.hp>0) oneShot(mc,'hit','idle',700);},420); }
   else { const keep=comboRun>=2&&(save.inv.charm||0)>0;
     if(keep){ save.inv.charm--; if(save.inv.charm<=0) delete save.inv.charm; perkMsg=`連擊護符發光了！連擊 ${comboRun} 沒有中斷。`; } else comboRun=0;
     if(b.rage) b.rageClean=false;
-    if(petPerk('cactoro')&&!b.shield){b.shield=true; perkMsg=(perkMsg?perkMsg+'<br>':'')+`${save.pets.owned.cactoro.name}擋下了這次攻擊！`;} else b.hearts--;
+    const pm=t=>{perkMsg=(perkMsg?perkMsg+'<br>':'')+t;};
+    if(clsIs('Knight')&&!b.guard){ b.guard=true; pm('騎士的守護之盾擋下了這次攻擊！（每場一次）'); }
+    else if(clsIs('Rogue_Hooded')&&Math.random()<.3){ pm('兜帽遊俠的靈巧閃避：閃開了攻擊！'); }
+    else if(petPerk('cactoro')&&!b.shield){b.shield=true; pm(`${save.pets.owned.cactoro.name}擋下了這次攻擊！`);} else b.hearts--;
     if(b.hearts<=0&&(save.inv.feather||0)>0){ save.inv.feather--; if(save.inv.feather<=0) delete save.inv.feather; b.hearts=1; b.revived=true; perkMsg=(perkMsg?perkMsg+'<br>':'')+'復活羽毛閃耀金光：你恢復了 1 顆愛心！'; }
     sfx('no'); oneShot(mc,b.s.n===2?'castShot':'chop','idle',1000); setTimeout(()=>{sfx('hurt'); if(b.hearts>0) oneShot(pc,'hit','idle',700);},420); }
   showCombo();
@@ -2430,6 +2452,7 @@ function win(){
   const um=UM(); um.stars=um.stars||{}; const stars=Math.max(1,Math.min(3,b.hearts-(b.revived?1:0)||1)); const prevSt=um.stars[s.n]||0; if(stars>prevSt) um.stars[s.n]=stars;
   const starBonus=!first&&stars>prevSt?(stars-prevSt)*10:0; const comboBonus=b.bonus||0; const courage=b.rage&&b.rageClean?15:0;
   coins+=starBonus+comboBonus+courage;
+  const rogueBonus=clsIs('Rogue')?Math.max(2,Math.round(coins*.2)):0; coins+=rogueBonus;
   const wkBonus=curSub===weekState().sub?Math.round(coins*.5):0; coins+=wkBonus; const weekMsg=weekWin();
   if(save.pets&&save.pets.active&&save.pets.owned[save.pets.active]){save.pets.owned[save.pets.active].love=(save.pets.owned[save.pets.active].love||0)+1;} if(pet) oneShot(pet,'jump','idle',1400);
   save.dex=save.dex||{}; const dk=curSub+'-'+s.n; const newDex=!save.dex[dk]; save.dex[dk]=(save.dex[dk]||0)+1;
@@ -2442,7 +2465,7 @@ function win(){
   const nextMsg=s.n<5?(first?`第 ${s.n+1} 關已經解鎖。`:'練習完成！'):(first?`你征服了「${MATH_UNITS[curUnit-1].title}」！${s.name}身邊出現了寶箱和回城的傳送門。`:'再次征服這個單元！這次沒有寶箱，旁邊的傳送門可以直接回城。');
   $('bQ').textContent=`勝利！打倒了${s.name}`; $('bOpts').innerHTML=''; $('bTimer').hidden=true;
   sfx('win'); setTimeout(()=>sfx('coin'),900); $('battle').classList.remove('rage'); $('bTag').hidden=true;
-  const extra=[comboBonus?`連擊獎勵 +${comboBonus}`:'',starBonus?`星星進步 +${starBonus}`:'',courage?`勇氣獎勵 +${courage}`:'',wkBonus?`主題週 +${wkBonus}`:'',weekMsg].filter(Boolean).join('．');
+  const extra=[comboBonus?`連擊獎勵 +${comboBonus}`:'',starBonus?`星星進步 +${starBonus}`:'',courage?`勇氣獎勵 +${courage}`:'',rogueBonus?`遊俠尋寶 +${rogueBonus}`:'',wkBonus?`主題週 +${wkBonus}`:'',weekMsg].filter(Boolean).join('．');
   $('bFb').innerHTML=`<p class="win-stars" aria-label="${stars} 顆星">${'<span class="st on">★</span>'.repeat(stars)}${'<span class="st">★</span>'.repeat(3-stars)}</p><p class="exp" style="margin-top:-4px">${stars===3?'完美！一顆愛心都沒有失去。':stars===2?'很棒！失去 1 顆愛心。再挑戰一次，挑戰三顆星！':'過關了！再挑戰一次，挑戰更多星星！'}${prevSt&&stars<=prevSt?`（最佳紀錄 ${prevSt} 顆星）`:''}</p><p><b class="ok">獲得 ${coins} 金幣</b>${first?'':'（再次挑戰的練習獎勵）'}${b.double?'．藥水加倍':''}${extra?`<br><span class="perk">${extra}</span>`:''}</p><p class="exp">${nextMsg}${qmsg?'<br>'+qmsg:''}${newDex?`<br>怪物圖鑑新登記：${DEX[curSub][s.n-1]}！`:''}</p><button type="button" class="act" id="bLeave">離開戰鬥</button>`;
   $('bFb').hidden=false; renderBars(); $('bLeave').onclick=()=>endBattle(); $('bLeave').focus();
 }
@@ -2834,6 +2857,33 @@ function updatePen(dt){
 }
 /* --- 介面 --- */
 function petsOwned(){ return save.pets?Object.keys(save.pets.owned||{}):[]; }
+/* ---------- 第 30 版：職業導師（轉職） ---------- */
+function openJob(){
+  const cur=save.look.cls;
+  const cards=Object.entries(CLASSES).map(([k,c])=>{ const T=CLS_TRAIT[k]; const me=k===cur;
+    return `<div class="card"><div class="glyph" style="background:${T.color}">${T.glyph}</div><div style="min-width:0"><h3>${c.label}<span style="font-size:13px;color:#6b4c2c;margin-left:6px">${T.name}</span></h3><p>${T.desc}</p></div>${me?'<button class="act" type="button" disabled>目前職業</button>':`<button class="act" type="button" data-job="${k}" ${save.coins<JOB_PRICE?'disabled':''}>轉職</button>`}</div>`; }).join('');
+  openPanel(panelShell('職業導師．轉職',`你現在是${CLASSES[cur].label}，有 ${save.coins} 金幣。轉職一次要 ${JOB_PRICE} 金幣${save.coins<JOB_PRICE?'，金幣還不夠，先去闖關存金幣吧':''}。`,cards));
+  veil.querySelectorAll('[data-job]').forEach(b=>b.onclick=()=>jobStep(b.dataset.job));
+}
+function jobStep(k){
+  const C=CLASSES[k], T=CLS_TRAIT[k];
+  openPanel(panelShell(`轉職成為${C.label}？`,`職業特性．${T.name}`,`<div class="scroll">${T.desc}<br><br>轉職要花 <b>${JOB_PRICE} 金幣</b>（你有 ${save.coins} 金幣）。轉職後會換上${C.label}的基本裝備，之後可以到裁縫屋找莉莉重新搭配。<br>金幣、背包、寵物和學習進度都不會改變。</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="act" type="button" id="jobYes">花 ${JOB_PRICE} 金幣轉職</button><button class="act ghost" type="button" id="jobNo" style="color:var(--parchment)">再想想</button></div>`));
+  $('jobNo').onclick=()=>openJob();
+  $('jobYes').onclick=()=>doJob(k);
+}
+function doJob(k){
+  const C=CLASSES[k]; if(!C||save.look.cls===k) return false;
+  if(save.coins<JOB_PRICE){ toast('金幣不夠喔'); return false; }
+  spendCoins(JOB_PRICE,'job');
+  const L=save.look; L.cls=k; L.main=C.main[0]; L.off=C.off[0]||'none'; L.hat=!!C.hat;
+  save.jobs=(save.jobs||0)+1; let achMsg='';
+  if(!save.ach.job){ save.ach.job=1; achMsg='<br>達成成就「新的旅程」！'; }
+  persist(); rebuildPlayer(); rebuildPet(); hud(); checkAch(); sfx('ach');
+  if(player.ch&&player.ch.actions.cheer) oneShot(player.ch,'cheer','idle',1600);
+  openPanel(panelShell('轉職成功！',`你現在是${C.label}了。`,`<div class="scroll"><b>職業特性．${CLS_TRAIT[k].name}</b>：${CLS_TRAIT[k].desc}${achMsg}<br><br>想換武器或頭飾，到裁縫屋找莉莉。</div><button class="act" type="button" id="jobOk" style="align-self:flex-start">好！</button>`));
+  $('jobOk').onclick=()=>closePanel(); return true;
+}
 function openPetShop(){
   const cards=PETS.map(P=>{ const own=save.pets&&save.pets.owned[P.id];
     return `<div class="card"><div class="glyph" style="background:${P.color}">${P.name[0]}</div><div style="min-width:0"><h3>${P.name}</h3><p>${P.perk}</p><div class="meta"><span class="purse"><span class="gem"></span>${P.price} 金幣</span></div></div>${own?'<button class="act" type="button" disabled>已領養</button>':`<button class="act" type="button" data-adopt="${P.id}" ${save.coins<P.price?'disabled':''}>領養</button>`}</div>`;}).join('');
@@ -3259,7 +3309,7 @@ $('hudPlayer').onclick=()=>{ if(mode!=='play') return; openPanel(panelShell('切
 
 /* ======================= 版本更新公告 ======================= */
 /* 每次發布新版：把 APP_VERSION 和 version.json 的 v 一起加 1，並在 version.json 的 notes 最前面加一則公告。 */
-const APP_VERSION=29, SEEN_KEY='learning-town-seen-version';
+const APP_VERSION=30, SEEN_KEY='learning-town-seen-version';
 let updShown=0, updInfo=null;
 async function fetchVer(){ try{ const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return null; const j=await r.json(); return j&&j.v?j:null; }catch(e){ return null; } }
 function noteHtml(list){ return list.map(n=>`<div class="unote"><h3>${esc(n.title)}<small>${esc(n.date||'')}</small></h3><ul>${(n.items||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>`).join(''); }
@@ -3309,7 +3359,7 @@ Promise.all([
   try{ const mv=sessionStorage.getItem('lt-moved'); sessionStorage.removeItem('lt-moved'); if(mv==='1') setTimeout(()=>toast('搬家完成！選一位冒險者進入，接著建立帳號和密碼。'),900); else if(mv==='0') setTimeout(()=>toast('搬家資料讀取失敗，請回到舊網址再試一次。'),900); }catch(e){}
   }
   checkUpdate(true);
-  window.__town={sim:(sec)=>{for(let i=0;i<sec*20;i++){updatePlayer(.05,0);}},startTour,openBigMap,startNav,get nav(){return nav;},get mode(){return mode;},openPets,openPetShop,openPractice,openLibrary,player,npcs,interact,openCreator,closePanel,startTalk,endTalk,get save(){return save;},get prof(){return prof;},checkUpdate,openPicker,pickProfile,setLevel,changeLevel,applyLevel,get subjData(){return SUBJ_DATA;},get quests(){return QUESTS;},cam,enterMap,startBattle,answer:(i)=>answer(i),get battle(){return battle;},openDex,openReport,openWrongBook,openDaily,openWander,evolvePet,openPets,openAch,openVideo,useSub:(x)=>useSub(x),qzAnswer:(i)=>qzAnswer(i),get qz(){return qz;},numKey,tfAnswer,matchTap,matchSubmit,ordSubmit,openSound,openBag,useBagItem,fireworks,get comboRun(){return comboRun;},set comboRun(v){comboRun=v;},sfx,get sndPref(){return sndPref;},ordCands:(u)=>ordCands(u),openAccount,openLogin,cloudPush,get cloudState(){return cloudState;},rpc,openBackup,makeBackup,readBackup,restoreOne,openRest,weekState,weekBanner,get animals(){return animals;},petAnimal,get altCur(){return altCur;},altKey,altTF,get restMin(){return restMin;},_bt:{renderQ,makeSpecial,chooseQ,isNumQ,canTF,nextQuestion},get portalLabels(){return portalLabels;},get zones(){return zones;}};
+  window.__town={sim:(sec)=>{for(let i=0;i<sec*20;i++){updatePlayer(.05,0);}},startTour,openBigMap,startNav,get nav(){return nav;},get mode(){return mode;},openPets,openPetShop,openPractice,openLibrary,player,npcs,interact,openCreator,closePanel,startTalk,endTalk,get save(){return save;},get prof(){return prof;},checkUpdate,openPicker,pickProfile,setLevel,changeLevel,applyLevel,get subjData(){return SUBJ_DATA;},get quests(){return QUESTS;},cam,enterMap,startBattle,answer:(i)=>answer(i),get battle(){return battle;},openDex,openReport,openWrongBook,openDaily,openWander,evolvePet,openPets,openAch,openVideo,useSub:(x)=>useSub(x),qzAnswer:(i)=>qzAnswer(i),get qz(){return qz;},numKey,tfAnswer,matchTap,matchSubmit,ordSubmit,openSound,openBag,useBagItem,fireworks,get comboRun(){return comboRun;},set comboRun(v){comboRun=v;},sfx,get sndPref(){return sndPref;},ordCands:(u)=>ordCands(u),openAccount,openLogin,cloudPush,get cloudState(){return cloudState;},rpc,openBackup,makeBackup,readBackup,restoreOne,openRest,weekState,weekBanner,get animals(){return animals;},petAnimal,get altCur(){return altCur;},altKey,altTF,get restMin(){return restMin;},_bt:{renderQ,makeSpecial,chooseQ,isNumQ,canTF,nextQuestion},get portalLabels(){return portalLabels;},openJob,doJob,jobStep,get zones(){return zones;}};
 }).catch(e=>{ console.error(e); const g=$('goBtn'); g.textContent='載入失敗，請重新整理頁面'; g.disabled=true; });
 requestAnimationFrame(tick);
 })();
