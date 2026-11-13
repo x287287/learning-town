@@ -193,6 +193,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--brass);outline-
 .ch{background:var(--walnut-2);color:var(--parchment);border:2px solid rgba(226,176,74,.35);border-radius:9px;padding:7px 12px;font-size:15px}
 .ch[aria-pressed="true"]{background:var(--parchment);color:var(--ink);border-color:var(--brass)}
 .ch.lock{opacity:.5}
+.htabs .ch{padding:5px 9px;font-size:14px}
+#hOpts .ch small{font-size:11px;color:var(--brass);margin-left:4px}
+#hOpts .ch[aria-pressed="true"] small{color:#8a6a2a}
+#hBuy{background:rgba(226,176,74,.14);border:1px solid var(--brass-deep);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+#hBuy p{margin:0;font-size:14px;color:var(--parchment);line-height:1.5}
+#hBuy .row{display:flex;gap:8px;flex-wrap:wrap}
 .sw{position:relative}
 .sw.lock{opacity:.55}
 .sw.lock::after{content:'鎖';position:absolute;right:-6px;bottom:-6px;background:var(--walnut);color:var(--brass);border:1px solid var(--brass-deep);border-radius:6px;font-size:10px;padding:0 3px;font-family:var(--f-body)}
@@ -435,18 +441,16 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--brass);outline-
   <div class="form" id="cForm">
     <div><label class="l" for="nameInput">冒險者名字</label><input id="nameInput" maxlength="10" placeholder="例如：小明" autocomplete="off"></div>
     <div id="lvRow"><span style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">學習階段</span><div class="choices" id="cLv"></div><p class="small" id="cLvNote" style="margin:6px 0 0"></p></div>
-    <div><span class="l" style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">職業造型</span><div class="choices" id="cClass"></div><p class="small" id="cClsNote" style="margin:6px 0 0"></p></div>
-    <div id="hatRow"><span class="l" style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">頭飾</span><div class="choices" id="cHat"></div></div>
-    <div><span style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">披風顏色</span><div class="choices" id="cCape"></div></div>
-    <div><span style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">主手</span><div class="choices" id="cMain"></div></div>
-    <div id="offRow"><span style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">副手</span><div class="choices" id="cOff"></div></div>
-    <div><span style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">特效</span><div class="choices" id="cFx"></div></div>
+    <div><span class="l" style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">職業</span><div class="choices" id="cClass"></div><p class="small" id="cClsNote" style="margin:6px 0 0"></p></div>
+    <div><span style="font-family:var(--f-display);font-size:17px;display:block;margin-bottom:6px">外型</span><div class="choices htabs" id="hTabs"></div></div>
+    <div><div class="choices" id="hOpts"></div><p class="small" id="hNote" style="margin:6px 0 0"></p></div>
   </div>
   <div class="foot">
     <div class="loadbar" id="loadbar" aria-label="載入進度"><i id="loadFill"></i></div>
+    <div id="hBuy" hidden></div>
     <button class="go" id="goBtn" type="button" disabled>城鎮載入中…</button>
     <p class="small">拖曳畫面可以轉動角色，放開後會自動轉回正面。</p>
-    <p class="small" id="cCredit">3D 模型：KayKit by Kay Lousberg、Quaternius（皆為 CC0），以 three.js 繪製。</p>
+    <p class="small" id="cCredit">3D 模型：KayKit by Kay Lousberg、Quaternius（皆為 CC0）；冒險者外型來自「冒險者角色編輯器」（KayKit Adventurers 改作）。以 three.js 繪製。</p>
   </div>
 </section>
 
@@ -489,6 +493,8 @@ const CLASSES={
   Mage:{label:'魔法師',hat:'Mage_Hat',hatLabel:'巫師帽',cape:'Mage_Cape',main:['1H_Wand','2H_Staff'],off:['Spellbook','Spellbook_open']},
   Rogue:{label:'遊俠',hat:null,cape:'Rogue_Cape',main:['Knife','1H_Crossbow','2H_Crossbow'],off:['Knife_Offhand','Throwable']},
   Rogue_Hooded:{label:'兜帽遊俠',hat:null,cape:'Rogue_Cape',main:['Knife','1H_Crossbow','2H_Crossbow'],off:['Knife_Offhand','Throwable']},
+  Cleric:{label:'牧師',base:'Mage',hat:'Mage_Hat',hatLabel:'巫師帽',cape:'Mage_Cape',main:['1H_Wand','2H_Staff'],off:['Spellbook','Spellbook_open']},
+  Bard:{label:'吟遊詩人',base:'Rogue',hat:null,cape:'Rogue_Cape',main:['Knife'],off:['Knife_Offhand']},
 };
 /* 第 30 版：職業特性與轉職 */
 const CLS_TRAIT={
@@ -497,8 +503,73 @@ const CLS_TRAIT={
   Mage:{name:'智慧之光',glyph:'光',color:'#7a4fb0',desc:'每場戰鬥第一道選擇題，會自動刪去一個錯誤選項；有時間限制的題目多 10 秒。'},
   Rogue:{name:'尋寶眼光',glyph:'寶',color:'#b8862a',desc:'打贏戰鬥時，多拿 20% 金幣（至少多 2 枚）。'},
   Rogue_Hooded:{name:'靈巧閃避',glyph:'影',color:'#3d8a4a',desc:'答錯時有 3 成機會閃開攻擊，不會失去愛心。'},
+  Cleric:{name:'治癒之光',glyph:'聖',color:'#c9a227',desc:'每場戰鬥連續答對 3 題時，如果失去過愛心，會恢復 1 顆（每場一次）。'},
+  Bard:{name:'鼓舞之歌',glyph:'琴',color:'#b33a6a',desc:'每場戰鬥第一次在連擊中答錯，連擊不會中斷；連擊 3 題以上時，每題多 1 金幣。'},
 };
 const JOB_PRICE=150;
+/* 第 31 版：冒險者角色編輯器（零件化角色、造型用金幣購買） */
+const HERO_PARTS={"hair":{"刺刺短髮":{"src":"騎士","meshes":["hair_knight"]},"中分長髮":{"src":"法師","meshes":["hair_mage","hair_mage_tie"]},"側分長髮":{"src":"盜賊","meshes":["hair_rogue"]}},"body":{"騎士盔甲":{"src":"騎士","meshes":["body_knight","body_knight_armL","body_knight_armR"]},"野蠻人皮衣":{"src":"野蠻人","meshes":["body_barbarian","body_barbarian_armL","body_barbarian_armR"]},"法師長袍":{"src":"法師","meshes":["body_mage","body_mage_armL","body_mage_armR"]},"盜賊短衣":{"src":"盜賊","meshes":["body_rogue","body_rogue_armL","body_rogue_armR"]},"牧師長袍":{"src":"牧師","meshes":["body_priest","body_priest_armL","body_priest_armR"]},"吟遊詩人短衣":{"src":"吟遊詩人","meshes":["body_bard","body_bard_armL","body_bard_armR"]}},"legs":{"騎士護腿":{"src":"騎士","meshes":["legs_knight_L","legs_knight_R"]},"毛皮褲":{"src":"野蠻人","meshes":["legs_barbarian_L","legs_barbarian_R"]},"法師長靴":{"src":"法師","meshes":["legs_mage_L","legs_mage_R"]},"皮靴短褲":{"src":"盜賊","meshes":["legs_rogue_L","legs_rogue_R"]},"吟遊詩人短褲":{"src":"吟遊詩人","meshes":["legs_bard_L","legs_bard_R"]}},"hat":{"騎士頭盔":{"src":"騎士","meshes":["hat_knight"]},"牛角帽":{"src":"野蠻人","meshes":["hat_barbarian"]},"巫師帽":{"src":"法師","meshes":["hat_mage"]},"兜帽":{"src":"盜賊","meshes":["hat_hood"]},"牧師高帽":{"src":"牧師","meshes":["hat_priest"]},"羽毛帽":{"src":"吟遊詩人","meshes":["hat_bard"]}},"cape":{"紅披風":{"src":"騎士","meshes":["cape_knight"]},"毛皮披肩":{"src":"野蠻人","meshes":["cape_barbarian"]},"紫披風":{"src":"法師","meshes":["cape_mage"]},"綠斗篷":{"src":"盜賊","meshes":["cape_rogue"]},"綠披風":{"src":"吟遊詩人","meshes":["cape_bard"]}},"right":{"單手劍":{"src":"騎士","meshes":["r_sword"]},"雙手大劍":{"src":"騎士","meshes":["r_greatsword"]},"單手斧":{"src":"野蠻人","meshes":["r_axe"]},"雙手巨斧":{"src":"野蠻人","meshes":["r_greataxe"]},"啤酒杯":{"src":"野蠻人","meshes":["r_mug"]},"魔杖":{"src":"法師","meshes":["r_wand"]},"法杖":{"src":"法師","meshes":["r_staff"]},"手弩":{"src":"盜賊","meshes":["r_crossbow"]},"重弩":{"src":"盜賊","meshes":["r_heavycrossbow"]},"短刀":{"src":"盜賊","meshes":["r_knife"]},"炸彈":{"src":"盜賊","meshes":["r_bomb"]},"牧師權杖":{"src":"牧師","meshes":["r_priest_staff"]}},"left":{"副手劍":{"src":"騎士","meshes":["l_sword"]},"圓盾":{"src":"騎士","meshes":["l_roundshield"]},"徽章盾":{"src":"騎士","meshes":["l_badgeshield"]},"方盾":{"src":"騎士","meshes":["l_rectshield"]},"尖刺盾":{"src":"騎士","meshes":["l_spikeshield"]},"副手斧":{"src":"野蠻人","meshes":["l_axe"]},"木圓盾":{"src":"野蠻人","meshes":["l_woodshield"]},"魔法書":{"src":"法師","meshes":["l_spellbook"]},"打開的魔法書":{"src":"法師","meshes":["l_spellbook_open"]},"副手短刀":{"src":"盜賊","meshes":["l_knife"]},"聖典":{"src":"牧師","meshes":["l_holybook"]}},"beard":{"大鬍子":{"src":"野蠻人","meshes":["beard_barbarian"]},"八字鬍":{"src":"自製","meshes":["beard_mustache"]},"山羊鬍":{"src":"自製","meshes":["beard_goatee"]}},"back":{"魯特琴":{"src":"吟遊詩人","meshes":["back_lute"]}},"hairacc":{"馬尾":{"src":"自製","meshes":["hairacc_ponytail"]},"包包頭":{"src":"自製","meshes":["hairacc_bun","hairacc_bun_bald"]},"雙辮子":{"src":"自製","meshes":["hairacc_braids"]}},"head":{"共用頭":{"src":"KayKit 風格","meshes":["head_base","head_ears"]}},"eyes":{"圓圓眼":{"src":"騎士／野蠻人","meshes":["eyes_barbarian"]},"睫毛眼":{"src":"法師","meshes":["eyes_mage"]},"細長眼":{"src":"盜賊","meshes":["eyes_rogue"]},"瞇瞇眼":{"src":"自製","meshes":["eyes_happy"]},"閃亮大眼":{"src":"自製","meshes":["eyes_big","eyes_big_shine"]}},"brows":{"粗眉":{"src":"騎士","meshes":["brows_knight"]},"濃眉":{"src":"野蠻人","meshes":["brows_barbarian"]},"細眉":{"src":"法師","meshes":["brows_mage"]},"挑眉":{"src":"盜賊","meshes":["brows_rogue"]}},"nose":{"小圓鼻":{"src":"騎士","meshes":["nose_knight"]},"大蒜鼻":{"src":"野蠻人","meshes":["nose_barbarian"]},"尖鼻子":{"src":"法師／盜賊","meshes":["nose_mage"]}},"mouth":{"淺笑":{"src":"騎士","meshes":["mouth_knight"]},"抿嘴":{"src":"法師","meshes":["mouth_mage"]},"微笑":{"src":"盜賊","meshes":["mouth_rogue"]},"大笑":{"src":"自製","meshes":["mouth_laugh"]},"驚訝":{"src":"自製","meshes":["mouth_wow"]}},"cheek":{"腮紅":{"src":"自製","meshes":["cheek_blush"]},"耳環":{"src":"盜賊","meshes":["earring_rogue"]},"腮紅＋耳環":{"src":"自製","meshes":["cheek_blush","earring_rogue"]}}};
+const HERO_SLOTS=[['hair','髮型',0,'光頭'],['color','髮色'],['hairacc','髮飾',0,'無'],['eyes','眼睛',1],['brows','眉毛',0,'無'],['nose','鼻子',1],['mouth','嘴巴',0,'無'],['cheek','臉頰',0,'無'],['beard','鬍子',0,'無'],['skin','膚色'],
+  ['hat','帽子',0,'不戴'],['body','上衣',1],['legs','褲子',1],['cape','披風',0,'不穿'],['dye','披風顏色'],['back','背飾',0,'無'],['right','右手',0,'空手'],['left','左手',0,'空手'],['fx','特效']];
+const HAIR_COLORS=[['棕色','#9b5a45'],['深棕','#5a3418'],['黑色','#262326'],['金色','#e4ac5c'],['淺金','#f0d290'],['薑紅','#c8642e'],['紅色','#c03a2b'],['灰白','#c9c6c2'],['白色','#f4f1ea'],['藍色','#4f86c6'],['紫色','#8a5cc0'],['粉紅','#f08cb4'],['綠色','#4e9a5c'],['銀灰','#978f86'],['亞麻','#dcae7d']];
+const SKIN_COLORS=[['淺膚','#fbd7bd'],['原色','#f6c09c'],['蜜桃','#eab08a'],['小麥','#d79a6c'],['焦糖','#c68642'],['可可','#8d5524'],['深棕','#5c3a21'],['淡綠','#a8d8a0'],['淡藍','#a9c8ee']];
+const HIDE_ALL=['騎士頭盔','牛角帽','兜帽'], SPIKY='刺刺短髮';
+const HERO_PRESET={
+  Knight:{eyes:'圓圓眼',brows:'粗眉',nose:'小圓鼻',mouth:'淺笑',hair:'刺刺短髮',color:'#dcae7d',hat:'騎士頭盔',body:'騎士盔甲',legs:'騎士護腿',cape:'紅披風',right:'單手劍',left:'圓盾'},
+  Barbarian:{eyes:'圓圓眼',brows:'濃眉',nose:'大蒜鼻',beard:'大鬍子',color:'#978f86',hat:'牛角帽',body:'野蠻人皮衣',legs:'毛皮褲',cape:'毛皮披肩',right:'雙手巨斧'},
+  Mage:{eyes:'睫毛眼',brows:'細眉',nose:'尖鼻子',mouth:'抿嘴',hair:'中分長髮',color:'#262326',hat:'巫師帽',body:'法師長袍',legs:'法師長靴',cape:'紫披風',right:'法杖',left:'魔法書'},
+  Rogue:{eyes:'細長眼',brows:'挑眉',nose:'尖鼻子',mouth:'微笑',cheek:'耳環',hair:'側分長髮',color:'#9b5a45',body:'盜賊短衣',legs:'皮靴短褲',cape:'綠斗篷',right:'短刀',left:'副手短刀'},
+  Rogue_Hooded:{eyes:'細長眼',brows:'挑眉',nose:'尖鼻子',mouth:'微笑',hair:'側分長髮',color:'#5a3418',hat:'兜帽',body:'盜賊短衣',legs:'皮靴短褲',cape:'綠斗篷',right:'手弩',left:'副手短刀'},
+  Cleric:{eyes:'睫毛眼',brows:'細眉',nose:'尖鼻子',mouth:'抿嘴',hair:'中分長髮',color:'#c8642e',hat:'牧師高帽',body:'牧師長袍',legs:'法師長靴',right:'牧師權杖',left:'聖典'},
+  Bard:{eyes:'細長眼',brows:'挑眉',nose:'尖鼻子',mouth:'微笑',hair:'側分長髮',color:'#e4ac5c',hat:'羽毛帽',body:'吟遊詩人短衣',legs:'吟遊詩人短褲',cape:'綠披風',back:'魯特琴'},
+};
+const OUTFIT_SLOTS=['hat','body','legs','cape','back','right','left'];
+const HERO_PRICE={eyes:20,brows:15,nose:15,mouth:15,cheek:20,hair:40,hairacc:40,beard:30,hat:60,body:100,legs:60,cape:60,back:80,right:60,left:50,color:30};
+const HERO_PRICE_X={'雙手大劍':80,'雙手巨斧':80,'法杖':80,'重弩':80,'牧師權杖':80,'啤酒杯':30,'炸彈':40};
+const HERO_FREE={color:['#9b5a45','#5a3418','#262326','#e4ac5c'],eyes:['圓圓眼','睫毛眼','細長眼'],brows:['粗眉','細眉'],nose:['小圓鼻','尖鼻子'],mouth:['淺笑','微笑'],hair:['刺刺短髮','中分長髮','側分長髮']};
+const GEAR_TO_HERO={'1H_Sword':['right','單手劍'],'2H_Sword':['right','雙手大劍'],'Round_Shield':['left','圓盾'],'Badge_Shield':['left','徽章盾'],'Rectangle_Shield':['left','方盾'],'Spike_Shield':['left','尖刺盾'],'1H_Sword_Offhand':['left','副手劍'],
+  '1H_Axe':['right','單手斧'],'2H_Axe':['right','雙手巨斧'],'Barbarian_Round_Shield':['left','木圓盾'],'1H_Axe_Offhand':['left','副手斧'],'Mug':['right','啤酒杯'],'1H_Wand':['right','魔杖'],'2H_Staff':['right','法杖'],
+  'Spellbook':['left','魔法書'],'Spellbook_open':['left','打開的魔法書'],'Knife':['right','短刀'],'1H_Crossbow':['right','手弩'],'2H_Crossbow':['right','重弩'],'Knife_Offhand':['left','副手短刀'],'Throwable':['right','炸彈']};
+function heroBlank(){ const h={skin:'#f6c09c',color:'#9b5a45'}; for(const k in HERO_PARTS) if(k!=='head') h[k]=null; return h; }
+function heroPreset(cls){ return Object.assign(heroBlank(),HERO_PRESET[cls]||HERO_PRESET.Knight); }
+function heroFromLook(look){
+  const cls=look.cls||'Knight', h=heroPreset(cls); h.right=null; h.left=null;
+  const C=CLASSES[cls]; if(C&&C.hat&&look.hat===false) h.hat=null;
+  for(const g of [look.main,look.off]){ const m=GEAR_TO_HERO[g]; if(m&&!h[m[0]]) h[m[0]]=m[1]; }
+  if(TWO_HANDED.has(look.main)) h.left=null; return h;
+}
+function heroKey(k,v){ return k+':'+v; }
+function heroPrice(k,v){ return HERO_PRICE_X[v]||HERO_PRICE[k]||50; }
+function heroOwned(k,v){ if(v==null||v===''||k==='skin') return true; if(HERO_FREE[k]&&HERO_FREE[k].includes(v)) return true; return !!(save.wardrobe&&save.wardrobe[heroKey(k,v)]); }
+function grantHero(h){ save.wardrobe=save.wardrobe||{}; for(const [k,v] of Object.entries(h||{})) if(v&&k!=='skin'&&(HERO_PARTS[k]||k==='color')) save.wardrobe[heroKey(k,v)]=1; }
+function heroVisible(root,H){
+  const get=n=>root.getObjectByName(n), show=(k,lab,on)=>{const e=HERO_PARTS[k]&&HERO_PARTS[k][lab]; if(e) for(const n of e.meshes){const o=get(n); if(o) o.visible=on;}};
+  for(const k in HERO_PARTS) for(const lab in HERO_PARTS[k]) show(k,lab,false);
+  for(const k in HERO_PARTS) show(k,k==='head'?'共用頭':H[k],true);
+  const hat=H.hat, hairHidden=!!(hat&&(HIDE_ALL.includes(hat)||H.hair===SPIKY));
+  if(hairHidden&&H.hair) show('hair',H.hair,false);
+  if(H.hairacc==='包包頭'){ const shown=H.hair&&!hairHidden, a=get('hairacc_bun'), b=get('hairacc_bun_bald'); if(a) a.visible=!hat&&!!shown; if(b) b.visible=!hat&&!shown; }
+  if(hat==='兜帽'){ const e=get('head_ears'); if(e) e.visible=false; }
+}
+function buildHero(look){
+  const root=THREE.SkeletonUtils.clone(models.hero.scene);
+  const H=Object.assign(heroBlank(),look.hero); if(look.fx==='crown') H.hat=null;
+  const mats={};
+  root.traverse(o=>{ if(!o.isMesh) return; o.castShadow=true; o.receiveShadow=true; o.frustumCulled=false; const n=o.material&&o.material.name;
+    if(n==='tint'||n==='skin'){ if(!mats[n]){ const m=mats[n]=o.material.clone(); m.color=new THREE.Color(n==='tint'?H.color:H.skin).convertSRGBToLinear(); if(n==='tint') m.color.multiplyScalar(1.12); } o.material=mats[n]; } });
+  heroVisible(root,H);
+  const partMeshes=(k)=>H[k]&&HERO_PARTS[k][H[k]]?HERO_PARTS[k][H[k]].meshes.map(n=>root.getObjectByName(n)).filter(Boolean):[];
+  const cc=CAPES.find(c=>c.id===look.cape);
+  if(cc&&cc.color) for(const o of partMeshes('cape')) o.traverse(m=>{if(m.isMesh){m.material=m.material.clone();m.material.map=null;m.material.color=new THREE.Color(cc.color);m.material.needsUpdate=true;}});
+  if(look.fx==='glow'||look.fx==='rune') for(const o of partMeshes('right')) o.traverse(m=>{if(m.isMesh){m.material=m.material.clone();m.material.emissive=new THREE.Color(look.fx==='glow'?'#3f8cff':'#ff7a1f');m.material.emissiveIntensity=look.fx==='glow'?.9:1;}});
+  // 把看不見的零件拿掉，減少繪製負擔
+  const drop=[]; for(const k in HERO_PARTS) for(const lab in HERO_PARTS[k]) for(const n of HERO_PARTS[k][lab].meshes){ const o=root.getObjectByName(n); if(o&&!o.visible) drop.push(o); }
+  drop.forEach(o=>o.parent&&o.parent.remove(o));
+  if(look.fx==='crown'){ root.updateMatrixWorld(true); const hb=root.getObjectByName('head'), hm=root.getObjectByName('head_base');
+    if(hb&&hm){ const box=new THREE.Box3().setFromObject(hm); const crown=makeCrown(); const p=new THREE.Vector3((box.min.x+box.max.x)/2,box.max.y-.12,(box.min.z+box.max.z)/2); hb.worldToLocal(p);
+      const ws=new THREE.Vector3(); hb.getWorldScale(ws); crown.scale.setScalar(1/ws.x); crown.position.copy(p); hb.add(crown); } }
+  return finishChar(root,look);
+}
 function clsIs(k){ return !!(save&&save.look&&save.look.cls===k); }
 const GEAR_ALL=[...new Set(Object.values(CLASSES).flatMap(c=>[...c.main,...c.off]))];
 const GEAR_LABEL={'1H_Sword':'單手劍','2H_Sword':'雙手大劍','Round_Shield':'圓盾','Badge_Shield':'徽章盾','Rectangle_Shield':'方盾','Spike_Shield':'尖刺盾','1H_Sword_Offhand':'副手劍',
@@ -600,6 +671,7 @@ function fixSave(){
   if(!save.math) save.math={units:{}};
   if(save.math.cleared){save.math.units=save.math.units||{};save.math.units[1]={cleared:save.math.cleared,chest:save.math.chest||0};delete save.math.cleared;delete save.math.chest;}
   if(!save.math.units) save.math.units={};
+  if(save.look&&save.created&&!save.look.hero){ save.look.hero=heroFromLook(save.look); grantHero(save.look.hero); const c=CAPES.find(x=>x.id===save.look.cape); if(!c||!c.shop) save.look.cape='none'; }
   if(save.watched) for(const k of Object.keys(save.watched)) if(/^\d+$/.test(k)){ save.watched['math-'+k]=1; delete save.watched[k]; }
 }
 function loadProfile(id){ save=BLANK(); curId=id||null; if(id){ try{ const s=JSON.parse(lsGet(KEY+':'+id)||'null'); if(s) save=Object.assign(save,s); }catch(e){} } fixSave(); if(id) migratePets(); applyLevel(); }
@@ -681,8 +753,10 @@ function labelSprite(text,{bg='#2a1b12',fg='#fbf3e1',border='#e2b04a',size=1}={}
 let CLIPS={};
 const ONCE=['jump','cheer','interact','chop','castShot','shoot','slash2','hit','death','skAwaken','skDeath','skInactive','skRevive'];
 function buildCharacter(look){
-  const g=models['ch_'+look.cls]; const root=THREE.SkeletonUtils.clone(g.scene);
-  const C=CLASSES[look.cls];
+  if(look.hero&&models.hero) return buildHero(look);
+  const bc=(CLASSES[look.cls]&&CLASSES[look.cls].base)||look.cls;
+  const g=models['ch_'+bc]; const root=THREE.SkeletonUtils.clone(g.scene);
+  const C=CLASSES[bc];
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;}});
   for(const n of GEAR_ALL){const o=root.getObjectByName(n); if(o) o.visible=(n===look.main)||(n===look.off&&!TWO_HANDED.has(look.main));}
   if(C.hat){const h=root.getObjectByName(C.hat); if(h) h.visible=!!look.hat;}
@@ -692,9 +766,12 @@ function buildCharacter(look){
   if(look.fx==='glow'){const w=root.getObjectByName(look.main); if(w) w.traverse(m=>{if(m.isMesh){m.material=m.material.clone();m.material.emissive=new THREE.Color('#3f8cff');m.material.emissiveIntensity=.9;}});}
   if(look.fx==='rune'){const w=root.getObjectByName(look.main); if(w) w.traverse(m=>{if(m.isMesh){m.material=m.material.clone();m.material.emissive=new THREE.Color('#ff7a1f');m.material.emissiveIntensity=1;}});}
   if(look.fx==='crown'){ if(C.hat){const h=root.getObjectByName(C.hat); if(h) h.visible=false;}
-    root.updateMatrixWorld(true); const hb=root.getObjectByName('head'); const hm=root.getObjectByName(look.cls==='Rogue_Hooded'?'Rogue_Head_Hooded':look.cls+'_Head');
+    root.updateMatrixWorld(true); const hb=root.getObjectByName('head'); const hm=root.getObjectByName(bc==='Rogue_Hooded'?'Rogue_Head_Hooded':bc+'_Head');
     if(hb&&hm){ const box=new THREE.Box3().setFromObject(hm); const crown=makeCrown(); const p=new THREE.Vector3((box.min.x+box.max.x)/2,box.max.y-.12,(box.min.z+box.max.z)/2); hb.worldToLocal(p);
       const ws=new THREE.Vector3(); hb.getWorldScale(ws); crown.scale.setScalar(1/ws.x); crown.position.copy(p); hb.add(crown); } }
+  return finishChar(root,look);
+}
+function finishChar(root,look){
   const holder=new THREE.Group(); holder.add(root); root.scale.setScalar(.75);
   if(look.fx==='aura'){const ring=new THREE.Mesh(new THREE.RingGeometry(.7,1.05,40),new THREE.MeshBasicMaterial({color:'#ffd56a',transparent:true,opacity:.75,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.05;ring.userData.spin=1;holder.add(ring);}
   if(look.fx==='sparkle'||look.fx==='petal'||look.fx==='snow'){const pf=look.fx==='petal',sn=look.fx==='snow';for(let i=0;i<6;i++){const s=new THREE.Mesh(new THREE.OctahedronGeometry(sn?.11:.09),new THREE.MeshBasicMaterial({color:pf?(i%2?'#ffb3c8':'#ff7fa6'):sn?(i%2?'#ffffff':'#a8dcff'):(i%2?'#fff3b0':'#c9b6ff')}));if(pf)s.scale.set(1.5,.35,1.1);if(sn)s.scale.set(.5,1.4,.5);s.userData.orbit=i;holder.add(s);}}
@@ -885,7 +962,7 @@ const NPC_DEFS=[
     lines:['鏘！鏘！……喔，小冒險者，要讓裝備閃閃發光嗎？','附魔和光環很貴，但很帥。先努力完成任務存金幣吧！'],
     opts:[['看看附魔與特效',()=>openShop('smith')]]},
   {id:'tailor',name:'莉莉',role:'裁縫師',face:'莉',color:'#7a4fb0',look:{cls:'Rogue_Hooded',hat:false,cape:'purple',main:'none',off:'none'},x:-18.5,z:27.5,place:'tailor',anim:'idle',
-    lines:['想換個新造型嗎？頭飾、披風、武器，通通可以重新搭配。','想換職業的話，要去榮譽殿堂找職業導師葛雷喔。','買到染料或特效之後，記得來找我換上！'],
+    lines:['歡迎來到裁縫屋！髮型、五官、帽子、衣服、披風、武器，通通可以在這裡挑。','還沒擁有的造型可以先試穿，喜歡再用金幣買下來。','想換職業的話，要去榮譽殿堂找職業導師葛雷喔。'],
     opts:[['更換造型',()=>openCreator(true)]]},
   {id:'library',name:'索菲亞',role:'大圖書館館長',face:'索',color:'#2f5ea8',look:{cls:'Mage',hat:false,cape:'blue',main:'none',off:'Spellbook_open'},x:-21,z:-19,place:'library',anim:'idle',
     lines:['噓——這裡是大圖書館。影片室裡有各單元的重點複習影片。','出發冒險前先來複習，答題會更有把握。'],
@@ -896,9 +973,9 @@ const NPC_DEFS=[
   {id:'castle',name:'亞瑟',role:'騎士隊長',face:'亞',color:'#2f5ea8',look:{cls:'Knight',hat:true,cape:'blue',main:'2H_Sword',off:'none'},x:0,z:-43,place:'castle',anim:'idle',
     lines:['這裡是榮譽殿堂。每一位冒險者的成就，國王都看在眼裡。','達成成就可以獲得稱號，選一個最喜歡的掛在名字上吧！'],
     opts:[['查看成就與稱號',()=>openAch()],['我的學習報告',()=>openReport()],['怪物圖鑑',()=>openDex()]]},
-  {id:'job',name:'葛雷',role:'職業導師',face:'職',color:'#8a6a2a',look:{cls:'Knight',hat:false,cape:'gold',main:'1H_Sword',off:'Badge_Shield'},x:-7,z:-47,ry:0.35,place:'castle',anim:'idle',
+  {id:'job',name:'葛雷',role:'職業導師',face:'職',color:'#8a6a2a',look:{cls:'Cleric',cape:'none',fx:'none',hero:Object.assign({},HERO_PRESET.Cleric,{skin:'#eab08a',color:'#c9c6c2',beard:'山羊鬍',hair:'中分長髮',left:null})},x:-7,z:-47,ry:0.35,place:'castle',anim:'idle',
     lines:['我是職業導師葛雷。每一種職業都有自己的特長，在戰鬥中會幫上不同的忙。',`想換一種職業冒險嗎？轉職要 ${JOB_PRICE} 金幣，換了之後也可以再換回來。`],
-    opts:[['我想轉職',()=>openJob()],['各職業有什麼特性？',()=>say('job','騎士的盾會擋下第一次攻擊；戰士連擊時會打出重擊；魔法師會刪去錯的選項，還多一點時間；遊俠打贏能多拿金幣；兜帽遊俠有機會閃開攻擊。')]]},
+    opts:[['我想轉職',()=>openJob()],['各職業有什麼特性？',()=>say('job','騎士的盾會擋下第一次攻擊；戰士連擊時會打出重擊；魔法師會刪去錯的選項，還多一點時間；遊俠打贏能多拿金幣；兜帽遊俠有機會閃開攻擊；牧師連擊時能恢復愛心；吟遊詩人的歌能保住連擊。')]]},
   {id:'training',name:'布魯斯',role:'訓練教官',face:'布',color:'#3d8a4a',look:{cls:'Barbarian',hat:true,cape:'green',main:'2H_Axe',off:'none'},x:46,z:-26,place:'training',anim:'idle',
     lines:['想變強就要多練習！這裡是訓練場。','選一個單元、決定要練幾題，想練幾次都可以。答錯了就看解說，再來一次！'],
     opts:[['開始練習',()=>openPractice()]]},
@@ -927,7 +1004,7 @@ const NPC_DEFS=[
     lines:['我每天都在大圖書館和城堡之間跑來跑去！','你知道嗎？一天讀 15 分鐘，一年就讀了 90 個小時以上。','看影片的時候，試著先猜猜看答案，再看解說，會記得更牢喔。'],opts:[]},
   {id:'v_farmer',name:'老陳',role:'牧場主人',face:'陳',color:'#7a5a2a',look:{cls:'Barbarian',hat:false,cape:'brown',main:'none',off:'none'},x:16,z:4,anim:'walk',walk:[[16,4],[30,-10],[46,-10],[51,-5],[46,-10],[30,-10]],
     lines:['城東的牧場是我照顧的，牛和馬都很乖，去摸摸牠們吧！','草吃進牛的肚子，會變成牛奶。大自然真神奇！','照顧動物要有耐心，學習也是一樣喔。'],opts:[]},
-  {id:'v_bard',name:'莉亞',role:'吟遊詩人',face:'莉',color:'#b33a6a',look:{cls:'Rogue',hat:false,cape:'purple',main:'none',off:'none'},x:3,z:14,anim:'walk',walk:[[3,14],[3,42],[-6,42],[-6,20]],
+  {id:'v_bard',name:'莉亞',role:'吟遊詩人',face:'莉',color:'#b33a6a',look:{cls:'Bard',cape:'none',fx:'none',hero:Object.assign({},HERO_PRESET.Bard,{skin:'#fbd7bd',color:'#c03a2b',hairacc:'馬尾',mouth:'大笑',cheek:'腮紅',eyes:'閃亮大眼'})},x:3,z:14,anim:'walk',walk:[[3,14],[3,42],[-6,42],[-6,20]],
     lines:['啦啦啦～我在城門和廣場之間唱歌。','把要背的東西編成歌或口訣，就比較容易記住喔！','累了就休息一下，眼睛看看遠方，等一下會學得更好。'],opts:[]},
   {id:'v_apprentice',name:'阿光',role:'魔法學徒',face:'光',color:'#7a4fb0',look:{cls:'Mage',hat:true,cape:'purple',main:'1H_Wand',off:'none'},x:-22,z:10,anim:'walk',walk:[[-22,10],[-34,12],[-35,-8],[-22,-8]],
     lines:['我在練習傳送魔法，可是常常傳錯地方……','梅林老師說：答錯不可怕，弄懂為什麼錯才是真正的魔法。','城西草地的羊駝毛好軟，去看看牠們吧！'],opts:[]},
@@ -1128,7 +1205,7 @@ function openInfo(){
   openPanel(panelShell('冒險指南','',`
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#b33a2c">委</div><div><h3>冒險者公會（東北）</h3><p>找公會長雷恩接取各科委託。</p></div></div>
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#b8862a">市</div><div><h3>市集（東）與鐵匠鋪（東南）</h3><p>用金幣買道具、披風染料、附魔特效。</p></div></div>
-    <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#7a4fb0">裁</div><div><h3>裁縫屋（西南）</h3><p>隨時更換頭飾、披風、武器和特效。想換職業，要到榮譽殿堂找職業導師葛雷（${JOB_PRICE} 金幣）。</p></div></div>
+    <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#7a4fb0">裁</div><div><h3>裁縫屋（西南）</h3><p>角色編輯器：髮型、五官、膚色、帽子、衣服、披風、武器和特效都能換；新造型可以先試穿，再用金幣買下。想換職業，要到榮譽殿堂找職業導師葛雷（${JOB_PRICE} 金幣）。</p></div></div>
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#3a2a5a">門</div><div><h3>傳送門廣場（西）</h3><p>五座傳送門通往${SUB.chinese.name}「文字森林」、數學「數字遺跡」、英語「海港王國」、自然「奇幻山谷」、社會「時光古城」，全部已開放。每個世界有不同的地形和守衛怪物，答對攻擊、答錯被反擊，對戰時可按 1～4 選答案。題型除了選擇題，還有判斷對錯、輸入答案、配對和排順序（訓練場和每日挑戰也會出現判斷對錯、輸入答案）。連續答對有連擊獎勵；不失去愛心能拿到 3 顆星；魔王血量剩一半會狂暴！</p></div></div>
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#2f5ea8">書</div><div><h3>大圖書館（西北）．榮譽殿堂（北）．訓練場（遠東北）</h3><p>看各單元的重點複習影片、查看成就稱號；訓練場可以選單元和題數反覆練習。</p></div></div>
     <div class="card" style="grid-template-columns:50px 1fr"><div class="glyph" style="background:#d9863a">寵</div><div><h3>魔法寵物屋（西南）</h3><p>找露露領養奇幻寵物。帶在身邊的寵物會跟著你，還會在戰鬥中發揮魔法能力。</p></div></div>
@@ -1192,25 +1269,53 @@ let toastT; function toast(m){const t=$('toast');t.textContent=m;t.classList.add
 /* ======================= CREATOR ======================= */
 let draft=null, editing=false;
 function owned(id){return !id||!!save.inv[id];}
+let hTab='hair';
+function hOk(k,v){ if(heroOwned(k,v)) return true; if(!editing){ const P=HERO_PRESET[draft.cls]||{}; return P[k]===v; } return false; }
+function heroUnowned(){ const out=[]; if(!draft||!draft.hero) return out; for(const [k] of HERO_SLOTS){ if(k==='dye'||k==='fx'||k==='skin') continue; const v=draft.hero[k]; if(v&&!hOk(k,v)) out.push([k,v,heroPrice(k,v)]); } return out; }
 function renderCreator(){
-  const L=draft, C=CLASSES[L.cls];
-  const btn=(sel,val,label,attr='')=>`<button type="button" class="ch" aria-pressed="${sel===val}" ${attr}>${label}</button>`;
+  const L=draft, H=L.hero;
   $('cClass').innerHTML=Object.entries(CLASSES).map(([k,c])=>`<button type="button" class="ch ${editing&&L.cls!==k?'lock':''}" data-cls="${k}" aria-pressed="${L.cls===k}">${c.label}</button>`).join('');
-  const T=CLS_TRAIT[L.cls]; $('cClsNote').innerHTML=`<b>職業特性．${T.name}</b>：${T.desc}${editing?'<br>想換職業，要到榮譽殿堂找職業導師葛雷。':'<br>之後想換職業，可以到榮譽殿堂找職業導師（要花金幣）。'}`;
-  $('hatRow').hidden=!C.hat;
-  $('cHat').innerHTML=C.hat?[[true,'戴上'+C.hatLabel],[false,'不戴']].map(([v,t])=>`<button type="button" class="ch" data-hat="${v}" aria-pressed="${L.hat===v}">${t}</button>`).join(''):'';
-  $('cCape').innerHTML=CAPES.map(c=>{const ok=owned(c.shop);return c.color?`<button type="button" class="sw ${ok?'':'lock'}" data-cape="${c.id}" aria-pressed="${L.cape===c.id}" aria-label="${c.label}色披風${ok?'':'（未解鎖）'}" title="${c.label}${ok?'':'：'+lockHint(c.shop)}" style="background:${c.color}"></button>`
-    :`<button type="button" class="ch" data-cape="none" aria-pressed="${L.cape==='none'}">不穿</button>`;}).join('');
-  $('cMain').innerHTML=[['none','空手'],...C.main.map(m=>[m,GEAR_LABEL[m]])].map(([v,t])=>`<button type="button" class="ch" data-main="${v}" aria-pressed="${L.main===v}">${t}</button>`).join('');
-  $('offRow').hidden=TWO_HANDED.has(L.main);
-  $('cOff').innerHTML=[['none','不拿'],...C.off.map(m=>[m,GEAR_LABEL[m]])].map(([v,t])=>`<button type="button" class="ch" data-off="${v}" aria-pressed="${L.off===v}">${t}</button>`).join('');
-  $('cFx').innerHTML=FX.map(f=>{const ok=owned(f.shop);return `<button type="button" class="ch ${ok?'':'lock'}" data-fx="${f.id}" aria-pressed="${L.fx===f.id}" title="${ok?'':lockHint(f.shop)}">${f.label}${ok?'':lockTag(f.shop)}</button>`;}).join('');
+  const T=CLS_TRAIT[L.cls]; $('cClsNote').innerHTML=`<b>職業特性．${T.name}</b>：${T.desc}${editing?'<br>想換職業，要到榮譽殿堂找職業導師葛雷。':'<br>選職業會先換上那個職業的服裝。之後想換職業，可以到榮譽殿堂找職業導師（要花金幣）。'}`;
+  $('hTabs').innerHTML=HERO_SLOTS.map(([k,t])=>`<button type="button" class="ch" data-htab="${k}" aria-pressed="${hTab===k}">${t}</button>`).join('');
+  const lockNote=editing?'有「金幣」標示的造型還沒擁有，可以先點來試穿，喜歡再買。':'有「金幣」標示的造型要用金幣買，進城後到裁縫屋就能試穿和購買。';
+  let html='', note='';
+  if(hTab==='skin'||hTab==='color'){
+    const list=hTab==='skin'?SKIN_COLORS:HAIR_COLORS;
+    html=list.map(([n,c])=>{const ok=hOk(hTab,c); return `<button type="button" class="sw ${ok?'':'lock'}" data-hset="${c}" aria-pressed="${H[hTab]===c}" aria-label="${n}${ok?'':'（'+heroPrice(hTab,c)+' 金幣）'}" title="${n}${ok?'':'：'+heroPrice(hTab,c)+' 金幣'}" style="background:${c}"></button>`;}).join('');
+    note=hTab==='skin'?'臉、耳朵和露出來的手會一起換色。膚色都不用錢。':'頭髮、眉毛、鬍子和髮飾會一起換色。基本髮色免費，其他每種 30 金幣。'+(editing?'':' '+lockNote);
+  } else if(hTab==='dye'){
+    html=CAPES.map(c=>{const ok=owned(c.shop); return c.color?`<button type="button" class="sw ${ok?'':'lock'}" data-cape="${c.id}" aria-pressed="${L.cape===c.id}" aria-label="${c.label}色披風${ok?'':'（未解鎖）'}" title="${c.label}${ok?'':'：'+lockHint(c.shop)}" style="background:${c.color}"></button>`
+      :`<button type="button" class="ch" data-cape="none" aria-pressed="${L.cape==='none'}">原本的顏色</button>`;}).join('');
+    note=H.cape?'把披風染成另一種顏色。染料在市集和流浪商人那裡買。':'現在沒有穿披風，先到「披風」挑一件。';
+  } else if(hTab==='fx'){
+    html=FX.map(f=>{const ok=owned(f.shop);return `<button type="button" class="ch ${ok?'':'lock'}" data-fx="${f.id}" aria-pressed="${L.fx===f.id}" title="${ok?'':lockHint(f.shop)}">${f.label}${ok?'':lockTag(f.shop)}</button>`;}).join('');
+    note='特效在鐵匠鋪購買，或從魔王寶箱開出來。';
+  } else {
+    const S=HERO_SLOTS.find(x=>x[0]===hTab);
+    if(S[3]) html+=`<button type="button" class="ch" data-hset="" aria-pressed="${!H[hTab]}">${S[3]}</button>`;
+    html+=Object.keys(HERO_PARTS[hTab]||{}).map(lab=>{const ok=hOk(hTab,lab); return `<button type="button" class="ch ${ok?'':'lock'}" data-hset="${lab}" aria-pressed="${H[hTab]===lab}">${lab}${ok?'':`<small>${heroPrice(hTab,lab)} 金幣</small>`}</button>`;}).join('');
+    note=(hTab==='hat'&&H.hat?(HIDE_ALL.includes(H.hat)?'這頂帽子會把頭髮整個蓋住。':'刺刺短髮和包包頭戴帽子時會收進帽子裡。')+' ':'')+lockNote;
+  }
+  $('hOpts').innerHTML=html; $('hNote').textContent=note; renderBuy();
+}
+function renderBuy(){
+  const u=editing?heroUnowned():[], box=$('hBuy'); box.hidden=!u.length; if(!u.length){ box.innerHTML=''; return; }
+  const tot=u.reduce((a,x)=>a+x[2],0), nm=x=>x[0]==='color'?(HAIR_COLORS.find(c=>c[1]===x[1])||['髮色'])[0]+'髮色':x[1];
+  box.innerHTML=`<p>試穿中：${u.map(x=>`${esc(nm(x))}（${x[2]}）`).join('、')}<br>共 <b>${tot}</b> 金幣，你有 ${save.coins} 金幣。</p><div class="row"><button type="button" class="act" id="hBuyBtn" ${save.coins<tot?'disabled':''}>全部買下</button><button type="button" class="act ghost" id="hUndo" style="color:var(--parchment)">換回原本的</button></div>`;
+  $('hBuyBtn').onclick=()=>{ if(save.coins<tot){toast('金幣不夠喔');return;} spendCoins(tot,'shop'); save.wardrobe=save.wardrobe||{}; u.forEach(([k,v])=>{save.wardrobe[heroKey(k,v)]=1;});
+    if(!save.ach.buy){save.ach.buy=1;toast('達成成就「精打細算」！');} else toast('買好了！'); persist(); hud(); sfx('coin'); renderCreator(); };
+  $('hUndo').onclick=()=>{ const orig=(save.look.hero)||heroFromLook(save.look); u.forEach(([k])=>{ draft.hero[k]=heroOwned(k,orig[k])?orig[k]:null; }); renderCreator(); previewDraft(); };
 }
 $('cForm').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return; const d=b.dataset;
   if(d.lv){ draftLv=d.lv==='jh'?'jh':'es'; renderLv(); return; }
+  if(d.htab){ hTab=d.htab; renderCreator(); return; }
+  if(d.hset!==undefined){ const v=d.hset===''?null:d.hset;
+    if(!editing&&!hOk(hTab,v)){ toast(`這個造型要 ${heroPrice(hTab,v)} 金幣，進城後到裁縫屋就能買`); return; }
+    if(HERO_SLOTS.find(x=>x[0]===hTab&&x[2])&&!v) return;
+    draft.hero[hTab]=v; renderCreator(); previewDraft(); return; }
   if(d.cls&&editing&&d.cls!==draft.cls){ toast(`想換職業，請到榮譽殿堂找職業導師葛雷（${JOB_PRICE} 金幣）`); return; }
-  if(d.cls){draft.cls=d.cls;const C=CLASSES[d.cls];draft.main=C.main[0];draft.off=C.off[0]||'none';draft.hat=true;}
+  if(d.cls){draft.cls=d.cls;const C=CLASSES[d.cls];draft.main=C.main[0];draft.off=C.off[0]||'none';draft.hat=true; const sk=draft.hero&&draft.hero.skin; draft.hero=heroPreset(d.cls); if(sk) draft.hero.skin=sk;}
   else if(d.hat!==undefined) draft.hat=d.hat==='true';
   else if(d.cape){const c=CAPES.find(x=>x.id===d.cape); if(!owned(c.shop)){toast(lockHint(c.shop));return;} draft.cape=d.cape;}
   else if(d.main) draft.main=d.main;
@@ -1234,7 +1339,7 @@ function renderLv(){
 }
 function openCreator(edit){
   editing=!!edit; if(talk){clearInterval(typeT);$('dialog').hidden=true;talk.n.talking=false;talk=null;}
-  draft=JSON.parse(JSON.stringify(save.look)); mode='create'; stopMove(); cam.yaw=0;
+  draft=JSON.parse(JSON.stringify(save.look)); if(!draft.hero) draft.hero=edit?heroFromLook(draft):heroPreset(draft.cls); if(!edit&&!save.created) draft.cape='none'; hTab='hair'; mode='create'; stopMove(); cam.yaw=0;
   $('nameInput').value=save.name||''; $('cTitle').textContent=edit?'裁縫屋':'學習冒險城';
   $('cLead').textContent=edit?'莉莉幫你重新搭配造型。':'打造你的冒險者，進城接受委託、學習知識，成為王國的英雄。';
   $('goBtn').textContent=edit?'完成換裝':'進城冒險！'; $('loadbar').hidden=true;
@@ -1245,6 +1350,8 @@ function openCreator(edit){
 }
 $('nameInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('goBtn').disabled)$('goBtn').click();});
 $('goBtn').onclick=()=>{
+  if(editing&&heroUnowned().length){ toast('還有試穿中的造型還沒買，先買下或換回原本的喔'); $('hBuy').scrollIntoView({block:'nearest'}); return; }
+  if(!editing) grantHero(draft.hero);
   const nm=($('nameInput').value.trim()||'冒險者').slice(0,10);
   const changed=JSON.stringify(save.look)!==JSON.stringify(draft)||nm!==save.name;
   save.name=nm; save.look=draft;
@@ -1329,7 +1436,8 @@ function tick(){
     if(mode==='create'&&preview){
       preview.mixer.update(dt); fxTick(preview,t); const s=previewSpot(); preview.holder.rotation.y+=((-cam.yaw)-preview.holder.rotation.y)*Math.min(1,dt*8);
       if(!drag) cam.yaw*=Math.max(0,1-dt*2.5); const narrow=innerWidth<=640; const off=narrow?new THREE.Vector3(0,2.3,0):new THREE.Vector3(-1.6,0,0);
-      tmp.set(s.x+off.x+0,s.y+1.6+(narrow?1.4:0),s.z+5.6+(narrow?1.5:0)); camera.position.lerp(tmp,.12); camera.lookAt(s.x+off.x,s.y+(narrow?.3:1.2),s.z);
+      tmp.set(s.x+off.x+0,s.y+1.6+(narrow?1.4:0),s.z+5.6+(narrow?1.5:0)); camera.position.lerp(tmp,.12); camera.lookAt(s.x+off.x,s.y+(narrow?.9:1.2),s.z);
+      if(narrow){ const r=$('creator').getBoundingClientRect(), W=innerWidth, H=innerHeight; const cy=Math.max(90,r.top||H*.42)/2+8; camera.setViewOffset(W,H,0,H/2-cy,W,H); camera.userData.vo=1; }
       sun.position.set(s.x+30,50,s.z+20); sun.target.position.set(s.x,0,s.z);
     }
   } else { camera.position.set(Math.sin(t*.06)*70,34,Math.cos(t*.06)*70); camera.lookAt(0,4,0); }
@@ -1734,7 +1842,8 @@ function exitMap(){ if(talk) endTalk(); travel('town'); }
 /* ---------- battle ---------- */
 let battle=null;
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
-function attackClip(){const L=save.look; if(L.cls==='Mage') return 'castShot'; if(/Crossbow/.test(L.main)) return 'shoot'; if(TWO_HANDED.has(L.main)) return 'slash2'; return 'chop';}
+function attackClip(){const L=save.look; const H=L.hero;
+  if(H){ const r=H.right; if(['魔杖','法杖','牧師權杖'].includes(r)||(!r&&(L.cls==='Mage'||L.cls==='Cleric'))) return 'castShot'; if(r==='手弩'||r==='重弩') return 'shoot'; if(r==='雙手大劍'||r==='雙手巨斧') return 'slash2'; return 'chop'; } if(L.cls==='Mage') return 'castShot'; if(/Crossbow/.test(L.main)) return 'shoot'; if(TWO_HANDED.has(L.main)) return 'slash2'; return 'chop';}
 /* ======================= 第 27 版：聲音、英語朗讀、連擊、星星、新題型 ======================= */
 /* ---------- 音效與背景音樂：用 Web Audio 即時合成，不需要音檔 ---------- */
 const SND_KEY='learning-town-sound';
@@ -2414,13 +2523,15 @@ function resolve(ok,timeout,recorded){
   if(!recorded&&c.q) recordAnswer(curSub,curUnit,b.s.n-1,c.qi,c.q,ok);
   const pc=player.ch, mc=b.m.ch;
   let perkMsg='';
-  if(ok){ comboRun++; b.maxCombo=Math.max(b.maxCombo||0,comboRun); if(comboRun>=3) b.bonus=(b.bonus||0)+2;
+  if(ok){ comboRun++; b.maxCombo=Math.max(b.maxCombo||0,comboRun); if(comboRun>=3) b.bonus=(b.bonus||0)+(clsIs('Bard')?3:2);
     if(comboRun>(save.bestCombo||0)){ save.bestCombo=comboRun; }
     const dbl=petPerk('dino')&&Math.random()<.3; const crit=!dbl&&clsIs('Barbarian')&&comboRun>=3&&Math.random()<.5;
     b.hp=Math.max(0,b.hp-(dbl||crit?2:1)); if(dbl) perkMsg=`${save.pets.owned.dino.name}的龍息：兩倍傷害！`; if(crit) perkMsg='戰士的狂戰之力：重擊！兩倍傷害！';
+    if(clsIs('Cleric')&&!b.healed&&comboRun>=3&&b.hearts<3){ b.healed=true; b.hearts++; perkMsg=(perkMsg?perkMsg+'<br>':'')+'牧師的治癒之光：恢復了 1 顆愛心！'; }
     oneShot(pc,attackClip(),'idle',1000); sfx('ok',comboRun); if(comboRun>=3) sfx('combo',comboRun); setTimeout(()=>{sfx('hit'); if(b.hp>0) oneShot(mc,'hit','idle',700);},420); }
-  else { const keep=comboRun>=2&&(save.inv.charm||0)>0;
-    if(keep){ save.inv.charm--; if(save.inv.charm<=0) delete save.inv.charm; perkMsg=`連擊護符發光了！連擊 ${comboRun} 沒有中斷。`; } else comboRun=0;
+  else { const song=clsIs('Bard')&&!b.song&&comboRun>=2; const keep=!song&&comboRun>=2&&(save.inv.charm||0)>0;
+    if(song){ b.song=true; perkMsg=`吟遊詩人的鼓舞之歌：連擊 ${comboRun} 沒有中斷！`; }
+    else if(keep){ save.inv.charm--; if(save.inv.charm<=0) delete save.inv.charm; perkMsg=`連擊護符發光了！連擊 ${comboRun} 沒有中斷。`; } else comboRun=0;
     if(b.rage) b.rageClean=false;
     const pm=t=>{perkMsg=(perkMsg?perkMsg+'<br>':'')+t;};
     if(clsIs('Knight')&&!b.guard){ b.guard=true; pm('騎士的守護之盾擋下了這次攻擊！（每場一次）'); }
@@ -2867,7 +2978,7 @@ function openJob(){
 }
 function jobStep(k){
   const C=CLASSES[k], T=CLS_TRAIT[k];
-  openPanel(panelShell(`轉職成為${C.label}？`,`職業特性．${T.name}`,`<div class="scroll">${T.desc}<br><br>轉職要花 <b>${JOB_PRICE} 金幣</b>（你有 ${save.coins} 金幣）。轉職後會換上${C.label}的基本裝備，之後可以到裁縫屋找莉莉重新搭配。<br>金幣、背包、寵物和學習進度都不會改變。</div>
+  openPanel(panelShell(`轉職成為${C.label}？`,`職業特性．${T.name}`,`<div class="scroll">${T.desc}<br><br>轉職要花 <b>${JOB_PRICE} 金幣</b>（你有 ${save.coins} 金幣）。轉職後會換上${C.label}的服裝和武器（這套服裝送給你，之後也能在裁縫屋穿），臉和頭髮不會變。<br>金幣、背包、寵物和學習進度都不會改變。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="act" type="button" id="jobYes">花 ${JOB_PRICE} 金幣轉職</button><button class="act ghost" type="button" id="jobNo" style="color:var(--parchment)">再想想</button></div>`));
   $('jobNo').onclick=()=>openJob();
   $('jobYes').onclick=()=>doJob(k);
@@ -2877,11 +2988,12 @@ function doJob(k){
   if(save.coins<JOB_PRICE){ toast('金幣不夠喔'); return false; }
   spendCoins(JOB_PRICE,'job');
   const L=save.look; L.cls=k; L.main=C.main[0]; L.off=C.off[0]||'none'; L.hat=!!C.hat;
+  const P=heroPreset(k); L.hero=L.hero||heroFromLook(L); for(const sl of OUTFIT_SLOTS) L.hero[sl]=P[sl]; grantHero(HERO_PRESET[k]);
   save.jobs=(save.jobs||0)+1; let achMsg='';
   if(!save.ach.job){ save.ach.job=1; achMsg='<br>達成成就「新的旅程」！'; }
   persist(); rebuildPlayer(); rebuildPet(); hud(); checkAch(); sfx('ach');
   if(player.ch&&player.ch.actions.cheer) oneShot(player.ch,'cheer','idle',1600);
-  openPanel(panelShell('轉職成功！',`你現在是${C.label}了。`,`<div class="scroll"><b>職業特性．${CLS_TRAIT[k].name}</b>：${CLS_TRAIT[k].desc}${achMsg}<br><br>想換武器或頭飾，到裁縫屋找莉莉。</div><button class="act" type="button" id="jobOk" style="align-self:flex-start">好！</button>`));
+  openPanel(panelShell('轉職成功！',`你現在是${C.label}了。`,`<div class="scroll"><b>職業特性．${CLS_TRAIT[k].name}</b>：${CLS_TRAIT[k].desc}${achMsg}<br><br>${C.label}的服裝和武器已經放進你的衣櫃，想重新搭配可以到裁縫屋找莉莉。</div><button class="act" type="button" id="jobOk" style="align-self:flex-start">好！</button>`));
   $('jobOk').onclick=()=>closePanel(); return true;
 }
 function openPetShop(){
@@ -3258,7 +3370,7 @@ let bigTick=0;
 
 
 /* ======================= 冒險者選擇（同一台裝置多個存檔） ======================= */
-const CLS_FACE={Knight:'騎',Barbarian:'戰',Mage:'法',Rogue:'遊',Rogue_Hooded:'俠'};
+const CLS_FACE={Knight:'騎',Barbarian:'戰',Mage:'法',Rogue:'遊',Rogue_Hooded:'俠',Cleric:'牧',Bard:'詩'};
 let pickManage=false, pickDel=null;
 function capeColor(id){ const c=CAPES.find(c=>c.id===id); return c&&c.color||'#7a4b2a'; }
 function fmtDay(t){ if(!t) return ''; const d=new Date(t), n=new Date(); const dd=dayIdx(n)-dayIdx(d); return dd<=0?'今天':dd===1?'昨天':`${d.getMonth()+1}/${d.getDate()}`; }
@@ -3309,7 +3421,7 @@ $('hudPlayer').onclick=()=>{ if(mode!=='play') return; openPanel(panelShell('切
 
 /* ======================= 版本更新公告 ======================= */
 /* 每次發布新版：把 APP_VERSION 和 version.json 的 v 一起加 1，並在 version.json 的 notes 最前面加一則公告。 */
-const APP_VERSION=30, SEEN_KEY='learning-town-seen-version';
+const APP_VERSION=31, SEEN_KEY='learning-town-seen-version';
 let updShown=0, updInfo=null;
 async function fetchVer(){ try{ const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return null; const j=await r.json(); return j&&j.v?j:null; }catch(e){ return null; } }
 function noteHtml(list){ return list.map(n=>`<div class="unote"><h3>${esc(n.title)}<small>${esc(n.date||'')}</small></h3><ul>${(n.items||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>`).join(''); }
@@ -3339,6 +3451,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkUpd
 /* ======================= BOOT ======================= */
 Promise.all([
   loadPack('town',f=>{$('loadFill').style.width=(f*100)+'%';}),
+  loadPack('hero').catch(e=>console.warn('hero',e)),
   Promise.all(['es','jh'].flatMap(lv=>['math','chinese','english','science','social'].map(s=>fetch(`data/${lv==='jh'?'jh-':''}${s}.json`).then(r=>r.ok?r.json():null).catch(()=>null).then(d=>{if(d) DATA_LV[lv][s]=d;})))).then(()=>{
     if(!DATA_LV.es.math) throw new Error('math data missing'); applyLevel();
   }),
@@ -3359,7 +3472,7 @@ Promise.all([
   try{ const mv=sessionStorage.getItem('lt-moved'); sessionStorage.removeItem('lt-moved'); if(mv==='1') setTimeout(()=>toast('搬家完成！選一位冒險者進入，接著建立帳號和密碼。'),900); else if(mv==='0') setTimeout(()=>toast('搬家資料讀取失敗，請回到舊網址再試一次。'),900); }catch(e){}
   }
   checkUpdate(true);
-  window.__town={sim:(sec)=>{for(let i=0;i<sec*20;i++){updatePlayer(.05,0);}},startTour,openBigMap,startNav,get nav(){return nav;},get mode(){return mode;},openPets,openPetShop,openPractice,openLibrary,player,npcs,interact,openCreator,closePanel,startTalk,endTalk,get save(){return save;},get prof(){return prof;},checkUpdate,openPicker,pickProfile,setLevel,changeLevel,applyLevel,get subjData(){return SUBJ_DATA;},get quests(){return QUESTS;},cam,enterMap,startBattle,answer:(i)=>answer(i),get battle(){return battle;},openDex,openReport,openWrongBook,openDaily,openWander,evolvePet,openPets,openAch,openVideo,useSub:(x)=>useSub(x),qzAnswer:(i)=>qzAnswer(i),get qz(){return qz;},numKey,tfAnswer,matchTap,matchSubmit,ordSubmit,openSound,openBag,useBagItem,fireworks,get comboRun(){return comboRun;},set comboRun(v){comboRun=v;},sfx,get sndPref(){return sndPref;},ordCands:(u)=>ordCands(u),openAccount,openLogin,cloudPush,get cloudState(){return cloudState;},rpc,openBackup,makeBackup,readBackup,restoreOne,openRest,weekState,weekBanner,get animals(){return animals;},petAnimal,get altCur(){return altCur;},altKey,altTF,get restMin(){return restMin;},_bt:{renderQ,makeSpecial,chooseQ,isNumQ,canTF,nextQuestion},get portalLabels(){return portalLabels;},openJob,doJob,jobStep,get zones(){return zones;}};
+  window.__town={sim:(sec)=>{for(let i=0;i<sec*20;i++){updatePlayer(.05,0);}},startTour,openBigMap,startNav,get nav(){return nav;},get mode(){return mode;},openPets,openPetShop,openPractice,openLibrary,player,npcs,interact,openCreator,closePanel,startTalk,endTalk,get save(){return save;},get prof(){return prof;},checkUpdate,openPicker,pickProfile,setLevel,changeLevel,applyLevel,get subjData(){return SUBJ_DATA;},get quests(){return QUESTS;},cam,enterMap,startBattle,answer:(i)=>answer(i),get battle(){return battle;},openDex,openReport,openWrongBook,openDaily,openWander,evolvePet,openPets,openAch,openVideo,useSub:(x)=>useSub(x),qzAnswer:(i)=>qzAnswer(i),get qz(){return qz;},numKey,tfAnswer,matchTap,matchSubmit,ordSubmit,openSound,openBag,useBagItem,fireworks,get comboRun(){return comboRun;},set comboRun(v){comboRun=v;},sfx,get sndPref(){return sndPref;},ordCands:(u)=>ordCands(u),openAccount,openLogin,cloudPush,get cloudState(){return cloudState;},rpc,openBackup,makeBackup,readBackup,restoreOne,openRest,weekState,weekBanner,get animals(){return animals;},petAnimal,get altCur(){return altCur;},altKey,altTF,get restMin(){return restMin;},_bt:{renderQ,makeSpecial,chooseQ,isNumQ,canTF,nextQuestion},get portalLabels(){return portalLabels;},openJob,doJob,jobStep,heroOwned,heroUnowned,get HERO_PARTS(){return HERO_PARTS;},get hTab(){return hTab;},renderCreator,get zones(){return zones;}};
 }).catch(e=>{ console.error(e); const g=$('goBtn'); g.textContent='載入失敗，請重新整理頁面'; g.disabled=true; });
 requestAnimationFrame(tick);
 })();
