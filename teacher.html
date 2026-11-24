@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>學習冒險城．老師查看頁</title>
+<style>
+:root{--ink:#2b2118;--ink2:#6b5a48;--line:#e3d7c3;--paper:#fbf7ef;--card:#fff;--brass:#b8862a;--red:#b33a2c;--green:#3d8a4a;--blue:#2f5ea8;--amber:#d9902a;
+  --math:#2f5ea8;--chinese:#3d8a4a;--english:#1f8a9a;--science:#7a4fb0;--social:#b8642a}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:var(--paper);line-height:1.55;font-size:15px}
+header{background:#3a2a1c;color:#f6ead2;padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{margin:0;font-size:20px;letter-spacing:.04em}
+header .sp{flex:1}
+header button{background:transparent;color:#f6ead2;border:1px solid #8a6a44;border-radius:8px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+header button:hover{background:#4d3826}
+main{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+.login{max-width:380px;margin:60px auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px}
+.login h2{margin:0 0 6px;font-size:19px}
+.login p{margin:0 0 16px;color:var(--ink2);font-size:14px}
+input[type=password],input[type=text],input[type=search]{width:100%;font:inherit;padding:9px 11px;border:1px solid #cdbfa7;border-radius:8px;background:#fffdf8}
+.btn{font:inherit;border:0;border-radius:8px;padding:9px 16px;background:#3a2a1c;color:#fff;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid #cdbfa7}
+.err{color:var(--red);font-size:14px;min-height:20px;margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:13px;color:var(--ink2)}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}
+.toolbar input{max-width:260px}
+.toolbar .note{color:var(--ink2);font-size:13px;flex:1;min-width:200px}
+.seg{display:inline-flex;border:1px solid #cdbfa7;border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:14px;border:0;background:#fffdf8;padding:6px 12px;cursor:pointer;color:var(--ink)}
+.seg button[aria-pressed=true]{background:#3a2a1c;color:#fff}
+.tablewrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:860px}
+th,td{padding:9px 10px;border-bottom:1px solid #efe6d6;text-align:left;vertical-align:middle;white-space:nowrap}
+th{font-size:13px;color:var(--ink2);font-weight:600;background:#f7f0e2;cursor:pointer;user-select:none;position:sticky;top:0}
+th.sorted::after{content:" ▾"}th.sorted.asc::after{content:" ▴"}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:#fbf3e3}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.who b{display:block}.who small{color:var(--ink2)}
+.tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:99px;background:#efe6d6;color:var(--ink2)}
+.tag.jh{background:#e3ecf8;color:var(--blue)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.mini{display:flex;gap:4px;align-items:flex-end}
+.mini .b{width:16px;background:#efe6d6;border-radius:3px;height:28px;position:relative;overflow:hidden}
+.mini .b i{position:absolute;left:0;right:0;bottom:0;border-radius:3px}
+.acc{font-weight:600}.acc.low{color:var(--red)}.acc.mid{color:var(--amber)}.acc.hi{color:var(--green)}
+.empty{padding:30px;text-align:center;color:var(--ink2)}
+/* detail drawer */
+.veil{position:fixed;inset:0;background:rgba(30,20,10,.35);display:flex;justify-content:flex-end;z-index:10}
+.drawer{width:min(760px,100%);height:100%;background:var(--paper);overflow-y:auto;padding:18px 20px 60px;box-shadow:-6px 0 24px rgba(0,0,0,.2)}
+.drawer h2{margin:0;font-size:21px}
+.drawer .sub{color:var(--ink2);font-size:14px;margin:2px 0 14px}
+.drawer h3{font-size:16px;margin:22px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--line)}
+.close{float:right}
+.subj{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.subj .hd{display:flex;align-items:center;gap:4px 8px;font-weight:700;margin-bottom:6px;flex-wrap:wrap;white-space:nowrap}
+.subj .hd span.r{white-space:normal}
+.subj .hd span.r{margin-left:auto;font-weight:400;color:var(--ink2);font-size:13px}
+.urow{display:grid;grid-template-columns:minmax(120px,1fr) 150px 70px;gap:8px;align-items:center;padding:4px 0;border-top:1px dashed #efe6d6;font-size:14px}
+.urow:first-of-type{border-top:0}
+.stages{display:flex;gap:4px}
+.st{width:24px;height:24px;border-radius:6px;background:#efe6d6;color:#a99a85;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.st.ok{background:#d8ecd9;color:var(--green)}
+.st.boss{border:1px dashed #c9b28a}
+.st.ok.boss{border-color:var(--green)}
+.weak{list-style:none;padding:0;margin:0}
+.weak li{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:6px;display:flex;gap:10px;align-items:center;font-size:14px}
+.weak li .acc{margin-left:auto}
+.wq{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:14px}
+.wq .m{color:var(--ink2);font-size:12px}
+.wq .a{color:var(--green)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.grid2 .kpi .v{font-size:20px}
+.small{font-size:13px;color:var(--ink2)}
+dialog{border:1px solid var(--line);border-radius:14px;padding:20px;max-width:360px;width:92%}
+dialog h3{margin:0 0 10px}
+dialog label{display:block;font-size:14px;margin:10px 0 4px}
+@media (max-width:640px){header h1{font-size:17px}.urow{grid-template-columns:1fr 130px 54px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>學習冒險城．老師查看頁</h1>
+  <span class="sp"></span>
+  <span id="hdInfo" style="font-size:13px;opacity:.8"></span>
+  <button type="button" id="btnReload" hidden>重新整理</button>
+  <button type="button" id="btnCsv" hidden>匯出 CSV</button>
+  <button type="button" id="btnPw" hidden>變更老師密碼</button>
+  <button type="button" id="btnOut" hidden>登出</button>
+</header>
+<main id="main">
+  <form class="login" id="loginForm">
+    <h2>老師登入</h2>
+    <p>輸入老師密碼，查看有建立雲端帳號的冒險者學習狀況。</p>
+    <input type="password" id="pw" autocomplete="current-password" placeholder="老師密碼" required>
+    <div style="display:flex;gap:10px;margin-top:12px;align-items:center"><button class="btn" id="loginBtn">登入</button><span class="small">密碼只存在這個分頁，關掉就要重新輸入。</span></div>
+    <div class="err" id="loginErr"></div>
+  </form>
+</main>
+<dialog id="pwDlg">
+  <form method="dialog" id="pwForm">
+    <h3>變更老師密碼</h3>
+    <label for="pwOld">目前的密碼</label><input type="password" id="pwOld" autocomplete="current-password" required>
+    <label for="pwNew">新密碼（至少 6 個字）</label><input type="password" id="pwNew" autocomplete="new-password" minlength="6" required>
+    <label for="pwNew2">再輸入一次新密碼</label><input type="password" id="pwNew2" autocomplete="new-password" minlength="6" required>
+    <div class="err" id="pwErr"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px"><button type="button" class="btn ghost" id="pwCancel">取消</button><button class="btn" id="pwOk">變更</button></div>
+  </form>
+</dialog>
+<script>
+(()=>{
+const CLOUD={url:'https://tsxbphngzuzpdddhadfw.supabase.co',key:'sb_publishable_EOXrx2SRQbFRHACqHbUUig_4e-EkgkE'};
+const SUBS=[['math','數學'],['chinese','國語'],['english','英語'],['science','自然'],['social','社會']];
+const SUBN=(id,lv)=>id==='chinese'&&lv==='jh'?'國文':(SUBS.find(s=>s[0]===id)||[0,id])[1];
+const CLS={Knight:'騎士',Barbarian:'戰士',Mage:'魔法師',Rogue:'遊俠',Rogue_Hooded:'兜帽遊俠',Cleric:'牧師',Bard:'吟遊詩人'};
+const LVN={es:'國小',jh:'國中'};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let PASS=null, DATA=null, ROWS=[], sortKey='updated', sortAsc=false, filt='', lvFilter='all';
+const BANK={es:{},jh:{}};
+async function rpc(fn,args){
+  const r=await fetch(`${CLOUD.url}/rest/v1/rpc/${fn}`,{method:'POST',headers:{'apikey':CLOUD.key,'Authorization':'Bearer '+CLOUD.key,'Content-Type':'application/json'},body:JSON.stringify(args)});
+  if(!r.ok) throw new Error('連線失敗（'+r.status+'）');
+  return r.json();
+}
+async function loadBanks(){
+  const jobs=[];
+  for(const lv of ['es','jh']) for(const [s] of SUBS) jobs.push(fetch(`data/${lv==='jh'?'jh-':''}${s}.json`).then(r=>r.ok?r.json():null).then(d=>{BANK[lv][s]=d;}).catch(()=>{}));
+  await Promise.all(jobs);
+}
+const banksReady=loadBanks();
+
+/* ---------- 計算每位冒險者的學習資料 ---------- */
+function levelBlock(save,lv){
+  // 目前階段的資料在 save 最上層，另一階段在 save.lvStore[lv]
+  const cur=save.level||'es';
+  if(lv===cur) return save;
+  return (save.lvStore&&save.lvStore[lv])||null;
+}
+function analyze(acc){
+  const s=acc.save||{}; const lv=s.level||'es';
+  const out={user:acc.user,name:s.name||acc.display||acc.user,lv,cls:CLS[s.cls]||'',coins:s.coins||0,updated:new Date(acc.updated),created:new Date(acc.created),
+    ach:Object.keys(s.ach||{}).length,combo:s.bestCombo||0,grad:s.grad||0,daily:(s.daily&&s.daily.best)||0,levels:{}};
+  for(const L of ['es','jh']){
+    const B=levelBlock(s,L); if(!B) continue;
+    const r={subs:{},n:0,ok:0,stages:0,total:0,stars:0,wrong:0};
+    for(const [id] of SUBS){
+      const D=BANK[L][id]; const units=(B[id]&&B[id].units)||{}; const st=(B.stats&&B.stats[id])||{};
+      let cleared=0, stars=0; for(const u of Object.values(units)){ cleared+=Object.keys(u.cleared||{}).length; stars+=Object.values(u.stars||{}).reduce((a,b)=>a+(+b||0),0); }
+      let n=0,ok=0; for(const v of Object.values(st)){ n+=v[0]||0; ok+=v[1]||0; }
+      const total=D?D.units.length*5:0;
+      const wrong=Object.keys(B.wrong||{}).filter(k=>k.startsWith(id+'-')).length;
+      r.subs[id]={cleared,total,stars,n,ok,wrong,units,st};
+      r.n+=n; r.ok+=ok; r.stages+=cleared; r.total+=total; r.stars+=stars; r.wrong+=wrong;
+    }
+    if(r.n||r.stages||L===lv) out.levels[L]=r;
+  }
+  const C=out.levels[lv]||{n:0,ok:0,stages:0,total:0,stars:0,wrong:0,subs:{}};
+  Object.assign(out,{n:C.n,ok:C.ok,acc:C.n?C.ok/C.n:null,stages:C.stages,total:C.total,stars:C.stars,wrong:C.wrong,cur:C});
+  return out;
+}
+function accCls(a){ return a==null?'':a<.6?'low':a<.8?'mid':'hi'; }
+function pct(a){ return a==null?'—':Math.round(a*100)+'%'; }
+function ago(d){ const m=(Date.now()-d)/6e4; if(m<1) return '剛剛'; if(m<60) return Math.round(m)+' 分鐘前'; const h=m/60; if(h<24) return Math.round(h)+' 小時前'; const dd=h/24; if(dd<30) return Math.round(dd)+' 天前'; return d.toLocaleDateString('zh-TW'); }
+function fmt(d){ return d.toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}); }
+
+/* ---------- 總覽 ---------- */
+function renderMain(){
+  const rows=ROWS.filter(r=>(lvFilter==='all'||r.lv===lvFilter)&&(!filt||(r.name+r.user).toLowerCase().includes(filt)));
+  const dir=sortAsc?1:-1;
+  rows.sort((a,b)=>{ const va=a[sortKey], vb=b[sortKey]; if(va==null&&vb==null) return 0; if(va==null) return 1; if(vb==null) return -1; return (va>vb?1:va<vb?-1:0)*dir; });
+  const week=ROWS.filter(r=>Date.now()-r.updated<7*864e5).length;
+  const N=ROWS.reduce((a,r)=>a+r.n,0), OK=ROWS.reduce((a,r)=>a+r.ok,0);
+  const cols=[['name','冒險者'],['lv','階段'],['updated','最後上線'],['n','答題數'],['acc','答對率'],['stages','闖過關卡'],['sub','各科進度'],['stars','星星'],['wrong','錯題本'],['coins','金幣']];
+  $('main').innerHTML=`
+  <div class="kpis">
+    <div class="kpi"><div class="v">${ROWS.length}</div><div class="l">雲端帳號</div></div>
+    <div class="kpi"><div class="v">${week}</div><div class="l">最近 7 天有上線</div></div>
+    <div class="kpi"><div class="v">${N}</div><div class="l">總答題數（目前階段）</div></div>
+    <div class="kpi"><div class="v acc ${accCls(N?OK/N:null)}">${pct(N?OK/N:null)}</div><div class="l">整體答對率</div></div>
+  </div>
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="搜尋冒險者或帳號" value="${esc(filt)}" aria-label="搜尋">
+    <div class="seg" role="group" aria-label="學習階段">${[['all','全部'],['es','國小'],['jh','國中']].map(([k,t])=>`<button type="button" data-lv="${k}" aria-pressed="${lvFilter===k}">${t}</button>`).join('')}</div>
+    <span class="note">點一位冒險者看各科細節、最弱的關卡和錯題。只包含有建立雲端帳號、而且同步過的冒險者。</span>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr>${cols.map(([k,t])=>`<th data-k="${k}" class="${sortKey===k?'sorted'+(sortAsc?' asc':''):''}" ${k==='sub'?'style="cursor:default"':''}>${t}</th>`).join('')}</tr></thead>
+    <tbody>${rows.length?rows.map(r=>`<tr data-u="${esc(r.user)}">
+      <td class="who"><b>${esc(r.name)}</b><small>帳號：${esc(r.user)}${r.cls?'．'+esc(r.cls):''}</small></td>
+      <td><span class="tag ${r.lv}">${LVN[r.lv]||r.lv}</span></td>
+      <td title="${fmt(r.updated)}"><span class="dot" style="background:${Date.now()-r.updated<864e5?'var(--green)':Date.now()-r.updated<7*864e5?'var(--amber)':'#c9bca6'}"></span>${ago(r.updated)}</td>
+      <td class="num">${r.n}</td>
+      <td class="num acc ${accCls(r.acc)}">${pct(r.acc)}</td>
+      <td class="num">${r.stages}<span class="small"> / ${r.total}</span></td>
+      <td><div class="mini" aria-label="各科進度">${SUBS.map(([id])=>{const x=r.cur.subs[id]||{cleared:0,total:0}; const p=x.total?x.cleared/x.total:0; return `<span class="b" title="${SUBN(id,r.lv)}：${x.cleared}/${x.total} 關"><i style="height:${Math.max(p?8:0,p*100)}%;background:var(--${id})"></i></span>`;}).join('')}</div></td>
+      <td class="num">${r.stars}</td>
+      <td class="num">${r.wrong}</td>
+      <td class="num">${r.coins}</td></tr>`).join(''):`<tr><td colspan="10" class="empty">${ROWS.length?'沒有符合的冒險者':'目前還沒有雲端帳號'}</td></tr>`}</tbody>
+  </table></div>
+  <p class="small" style="margin-top:10px">各科進度長條依序是：數學、國語（國文）、英語、自然、社會。答對率是戰鬥中答題的結果（不含訓練場和每日挑戰）。</p>`;
+  $('q').oninput=e=>{ filt=e.target.value.trim().toLowerCase(); const pos=e.target.selectionStart; renderMain(); const q=$('q'); q.focus(); q.setSelectionRange(pos,pos); };
+  document.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{lvFilter=b.dataset.lv; renderMain();});
+  document.querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{ const k=th.dataset.k; if(k==='sub') return; if(sortKey===k) sortAsc=!sortAsc; else { sortKey=k; sortAsc=(k==='name'||k==='lv'); } renderMain(); });
+  document.querySelectorAll('tbody tr[data-u]').forEach(tr=>tr.onclick=()=>openDetail(tr.dataset.u));
+}
+
+/* ---------- 個人細節 ---------- */
+function openDetail(user){
+  const r=ROWS.find(x=>x.user===user); const acc=DATA.accounts.find(a=>a.user===user); if(!r||!acc) return;
+  const s=acc.save||{};
+  const lvs=Object.keys(r.levels).sort((a,b)=>a===r.lv?-1:b===r.lv?1:0);
+  let html=`<button type="button" class="btn ghost close" id="dClose">關閉</button>
+    <h2>${esc(r.name)}</h2><div class="sub">帳號：${esc(r.user)}．${r.cls||'—'}．目前階段：${LVN[r.lv]}．建立於 ${fmt(r.created)}．最後上線 ${fmt(r.updated)}</div>
+    <div class="grid2">
+      <div class="kpi"><div class="v">${r.n}</div><div class="l">答題數</div></div>
+      <div class="kpi"><div class="v acc ${accCls(r.acc)}">${pct(r.acc)}</div><div class="l">答對率</div></div>
+      <div class="kpi"><div class="v">${r.stages}<span class="small"> / ${r.total}</span></div><div class="l">闖過關卡</div></div>
+      <div class="kpi"><div class="v">${r.combo}</div><div class="l">最佳連擊</div></div>
+      <div class="kpi"><div class="v">${r.grad}</div><div class="l">錯題複習學會</div></div>
+      <div class="kpi"><div class="v">${r.ach}</div><div class="l">成就</div></div>
+    </div>`;
+  for(const L of lvs){
+    const R=r.levels[L];
+    html+=`<h3>${LVN[L]}的各科進度${L!==r.lv?'（之前玩過的階段）':''}</h3>`;
+    for(const [id] of SUBS){
+      const x=R.subs[id], D=BANK[L][id]; if(!D) continue;
+      const a=x.n?x.ok/x.n:null;
+      html+=`<div class="subj"><div class="hd"><span class="dot" style="background:var(--${id});width:10px;height:10px"></span>${SUBN(id,L)}<span class="r">闖過 ${x.cleared}/${x.total} 關．答 ${x.n} 題．答對率 <b class="acc ${accCls(a)}">${pct(a)}</b>${x.wrong?`．錯題本 ${x.wrong} 題`:''}</span></div>`;
+      const touched=D.units.filter(U=>x.units[U.n]||Object.keys(x.st).some(k=>k.startsWith(U.n+'-')));
+      if(!touched.length){ html+=`<div class="small">還沒開始。</div></div>`; continue; }
+      for(const U of touched){
+        const u=x.units[U.n]||{}; let un=0,uok=0; for(let i=0;i<5;i++){ const v=x.st[U.n+'-'+i]; if(v){un+=v[0];uok+=v[1];} }
+        const ua=un?uok/un:null;
+        html+=`<div class="urow"><span>${esc(U.title)}</span><span class="stages">${[1,2,3,4,5].map(n=>{const ok=u.cleared&&u.cleared[n]; const stv=u.stars&&u.stars[n]; return `<span class="st ${ok?'ok':''} ${n===5?'boss':''}" title="第 ${n} 關：${esc(U.stages[n-1][1])}${ok?'（已通過'+(stv?'，'+stv+' 星':'')+'）':''}">${ok?(stv?stv+'★':'✓'):n}</span>`;}).join('')}</span><span class="acc ${accCls(ua)}" style="text-align:right">${pct(ua)}</span></div>`;
+      }
+      html+=`</div>`;
+    }
+    // 最弱的關卡
+    const weak=[];
+    for(const [id] of SUBS){ const x=R.subs[id], D=BANK[L][id]; if(!D) continue;
+      for(const [k,v] of Object.entries(x.st)){ if((v[0]||0)<4) continue; const [u,si]=k.split('-').map(Number); const U=D.units.find(z=>z.n===u); if(!U) continue;
+        weak.push({a:v[1]/v[0],n:v[0],t:`${SUBN(id,L)}．${U.title}．第 ${si+1} 關「${U.stages[si]?U.stages[si][1]:''}」`}); } }
+    weak.sort((a,b)=>a.a-b.a);
+    const w3=weak.filter(w=>w.a<.8).slice(0,5);
+    html+=`<h3>需要加強的關卡（${LVN[L]}）</h3>`+(w3.length?`<ul class="weak">${w3.map(w=>`<li><span>${esc(w.t)}</span><span class="small">${w.n} 題</span><span class="acc ${accCls(w.a)}">${pct(w.a)}</span></li>`).join('')}</ul>`:`<div class="small">${weak.length?'每一關的答對率都在 80% 以上。':'答題數還太少（每關至少答 4 題才列入）。'}</div>`);
+    // 錯題本
+    const B=levelBlock(s,L)||{}; const W=Object.entries(B.wrong||{}).map(([k,v])=>{ const [sub,u,si,qi]=k.split('-'); const D=BANK[L][sub]; const U=D&&D.units.find(z=>z.n===+u); const q=U&&U.q[+si]&&U.q[+si][+qi];
+      return {sub,u:+u,si:+si,v,U,q:q&&q.q.slice(0,12)===v.h?q:null}; }).filter(x=>x.U).sort((a,b)=>(b.v.n||0)-(a.v.n||0));
+    html+=`<h3>錯題本（${LVN[L]}，${W.length} 題）</h3>`+(W.length?W.slice(0,30).map(x=>`<div class="wq"><div class="m">${SUBN(x.sub,L)}．${esc(x.U.title)}．第 ${x.si+1} 關．答錯 ${x.v.n||1} 次${x.v.c?`．複習答對 ${x.v.c} 次`:''}</div>${x.q?`<div>${esc(x.q.q)}</div><div class="a">正確答案：${esc(x.q.o[0])}</div>`:`<div>${esc(x.v.h)}…（題目已更新）</div>`}</div>`).join('')+(W.length>30?`<div class="small">只列出答錯最多次的 30 題。</div>`:''):`<div class="small">錯題本是空的。答錯的題目會記在這裡，在複習中連續答對 2 次就會移除。</div>`);
+  }
+  const vb=document.createElement('div'); vb.className='veil'; vb.innerHTML=`<div class="drawer" role="dialog" aria-modal="true" aria-label="${esc(r.name)}的學習狀況">${html}</div>`;
+  document.body.appendChild(vb); document.body.style.overflow='hidden';
+  const close=()=>{ vb.remove(); document.body.style.overflow=''; document.removeEventListener('keydown',esc_); };
+  const esc_=e=>{ if(e.key==='Escape') close(); };
+  vb.onclick=e=>{ if(e.target===vb) close(); }; $('dClose').onclick=close; document.addEventListener('keydown',esc_);
+}
+
+/* ---------- CSV ---------- */
+function csv(){
+  const head=['冒險者','帳號','職業','階段','最後上線','答題數','答對題數','答對率','闖過關卡','總關卡',...SUBS.map(([id])=>SUBN(id)+'闖關'),...SUBS.map(([id])=>SUBN(id)+'答對率'),'星星','錯題本','金幣','成就','最佳連擊'];
+  const lines=[head];
+  for(const r of ROWS){ lines.push([r.name,r.user,r.cls,LVN[r.lv],fmt(r.updated),r.n,r.ok,pct(r.acc),r.stages,r.total,
+    ...SUBS.map(([id])=>{const x=r.cur.subs[id]; return x?`${x.cleared}/${x.total}`:'';}),
+    ...SUBS.map(([id])=>{const x=r.cur.subs[id]; return x&&x.n?pct(x.ok/x.n):'';}),r.stars,r.wrong,r.coins,r.ach,r.combo]); }
+  const text='﻿'+lines.map(l=>l.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'text/csv'})); const d=new Date();
+  a.download=`學習冒險城學習狀況_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+/* ---------- 登入與載入 ---------- */
+async function load(pass){
+  const res=await rpc('lt_teacher_overview',{p_pass:pass});
+  if(res.error) throw new Error(res.error);
+  await banksReady;
+  PASS=pass; try{ sessionStorage.setItem('lt-teacher',pass); }catch(e){}
+  DATA=res; ROWS=res.accounts.map(analyze);
+  ['btnReload','btnCsv','btnPw','btnOut'].forEach(id=>$(id).hidden=false);
+  $('hdInfo').textContent='更新於 '+fmt(new Date());
+  renderMain();
+}
+$('loginForm').onsubmit=async e=>{ e.preventDefault(); $('loginBtn').disabled=true; $('loginErr').textContent='';
+  try{ await load($('pw').value); }catch(err){ $('loginErr').textContent=err.message; } finally{ const b=$('loginBtn'); if(b) b.disabled=false; } };
+$('btnReload').onclick=async()=>{ try{ await load(PASS); }catch(err){ alert(err.message); } };
+$('btnCsv').onclick=csv;
+$('btnOut').onclick=()=>{ try{ sessionStorage.removeItem('lt-teacher'); }catch(e){} location.reload(); };
+$('btnPw').onclick=()=>{ $('pwErr').textContent=''; $('pwForm').reset(); $('pwDlg').showModal(); };
+$('pwCancel').onclick=()=>$('pwDlg').close();
+$('pwForm').onsubmit=async e=>{ e.preventDefault();
+  if($('pwNew').value!==$('pwNew2').value){ $('pwErr').textContent='兩次輸入的新密碼不一樣'; return; }
+  try{ const r=await rpc('lt_teacher_change_password',{p_old:$('pwOld').value,p_new:$('pwNew').value}); if(r.error) throw new Error(r.error);
+    PASS=$('pwNew').value; try{ sessionStorage.setItem('lt-teacher',PASS); }catch(e){} $('pwDlg').close(); alert('老師密碼已變更。'); }
+  catch(err){ $('pwErr').textContent=err.message; } };
+(async()=>{ let p=null; try{ p=sessionStorage.getItem('lt-teacher'); }catch(e){} if(p){ try{ await load(p); }catch(e){ try{ sessionStorage.removeItem('lt-teacher'); }catch(_){} } } })();
+window.__teacher={analyze,get ROWS(){return ROWS;},openDetail};
+})();
+</script>
+</body>
+</html>
